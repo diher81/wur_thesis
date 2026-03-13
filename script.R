@@ -66,7 +66,7 @@ lapply(unlist(packages), library, character.only = TRUE)
 workwd <- getwd()
 workwd_data <- "./data/E-MTAB-11658"
 
-# Read raw data from micro-arrays
+# Read raw micro-array data
 targets <- read.delim("./normalization/Targets.txt", stringsAsFactors=FALSE)
 microArrayFileNames <- targets$FileName
 
@@ -89,19 +89,47 @@ head(rawDataMicroArrays$genes)
 # Background correction
 bgCorrected <- backgroundCorrect(rawDataMicroArrays, method="normexp", offset=50)
 
-# 4. Within-array normalization (LOESS)
+# Within-array normalization (LOESS)
 maNorm <- normalizeWithinArrays(bgCorrected, method="loess")
 
-# 5. Between-array normalization (quantile on A-values)
+# Between-array normalization (quantile on A-values)
 maNorm <- normalizeBetweenArrays(maNorm, method="Aquantile")
 
-# 6. Convert to M-values (log-ratios) for downstream analysis
+# Convert to M-values (log-ratios) for downstream analysis (*)
 M <- maNorm$M
 A <- maNorm$A
 
-# 7. Inspect summary to check normalization
+# Inspect summary to check normalization
 summary(M)
 summary(A)
 
+
+
+
+# ------------------------------------------------------------------------------
+# (*) Explanations on M- and A-values
+# ------------------------------------------------------------------------------
+
+# $M — log-ratio (fold-change)
+# 
+# $M comes from the original red and green intensities:
+#   
+#   M=log⁡2(R)−log⁡2(G)
+# 
+# It represents the log-fold change between the two channels for each spot.
+# 
+# After within-array normalization, $M is adjusted to remove dye-bias, so comparisons across arrays are more reliable.
+
+# 2. $A — average log-intensity
+# 
+# $A is the mean log-intensity of the two channels:
+#   
+#   A = 1/2 (log⁡2(R)+log⁡2(G))
+# 
+# It gives a measure of overall signal strength.
+# 
+# $A is used in MA-plots, which plot M vs. A to visualize intensity-dependent biases.
+
+# 3. maNorm holds the MA-transformed data, i.e., $M and $A values after within-array normalization.
 
 
