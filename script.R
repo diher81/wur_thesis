@@ -53,6 +53,16 @@ lapply(unlist(packages), library, character.only = TRUE)
 
 
 # ------------------------------------------------------------------------------
+# Functions
+# ------------------------------------------------------------------------------
+
+setwd("./Function_scripts/")
+for(i in 1:length(dir())){
+  source(dir()[i])
+}
+
+
+# ------------------------------------------------------------------------------
 # Plotting themes
 # ------------------------------------------------------------------------------
 
@@ -67,7 +77,7 @@ workwd <- getwd()
 workwd_data <- "./data/E-MTAB-11658"
 
 # Read raw micro-array data
-targets <- read.delim("./normalization/Targets.txt", stringsAsFactors=FALSE)
+targets_RIL <- read.delim("./normalization/Targets_RIL.txt", stringsAsFactors=FALSE)
 microArrayFileNames <- targets$FileName
 
 # Read raw red/green intensities
@@ -86,23 +96,52 @@ head(rawDataMicroArrays$genes)
 # Data normalization
 # ------------------------------------------------------------------------------
 
-# Background correction
-bgCorrected <- backgroundCorrect(rawDataMicroArrays, method="normexp", offset=50)
+rg.norm <- transcriptomics.agilent.norm(targets = targets_RIL,
+                # array_dir = "W:/PROJECTS/NEMmasstorage/C.elegans/Data/MA/MA_elegans/", 
+                save_dir = paste(workwd,"/Normalized/",sep=""),
+                filename = filename
+                )
 
-# Within-array normalization (LOESS)
-maNorm <- normalizeWithinArrays(bgCorrected, method="loess")
+trans.int <- transcriptomics.transform.norm(rg.norm,
+                filename=filename,
+                save_dir=paste(workwd,"/Data/MA/",sep=""))
 
-# Between-array normalization (quantile on A-values)
-maNorm <- normalizeBetweenArrays(maNorm, method="Aquantile")
+###Checks
+correlsums <- transcriptomics.check.cor(trans.int,filename=filename,save_dir=paste(workwd,"/Data/MA/",sep=""))
+transcriptomics.check.genes(trans.int,spot.id=agi.id$gene_public_name,filename=filename,save_dir=paste(workwd,"/Data/MA/",sep=""))
 
-# Convert to M-values (log-ratios) for downstream analysis (*)
-M <- maNorm$M
-A <- maNorm$A
+###Make a list
+colnames.sep <- ":"
+colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
 
-# Inspect summary to check normalization
-summary(M)
-summary(A)
+list.data <- transcriptomics.list.to.df(trans.int = trans.int, spot.id=agi.id$SpotID,colnames.sep = colnames.sep, colnames.names = colnames.names)
+save(list.data,file=paste(workwd,"/Normalized/obj_list.data.Rdata",sep=""))
 
+
+
+# # Background correction
+# bgCorrected <- backgroundCorrect(rawDataMicroArrays, method="normexp", offset=50) # Bodil method="none"
+# 
+# # Within-array normalization (LOESS)
+# maNorm <- normalizeWithinArrays(bgCorrected, method="loess")
+# 
+# # Between-array normalization (quantile on A-values)
+# maNorm <- normalizeBetweenArrays(maNorm, method="quantile")
+# 
+# # Convert to M-values (log-ratios) for downstream analysis (*)
+# M <- maNorm$M
+# A <- maNorm$A
+# 
+# # Inspect summary to check normalization
+# summary(M)
+# summary(A)
+
+
+# transcriptomics.agilent.norm
+#transcriptomics.transform.norm
+#transcriptomics.check.core
+#transcriptomics.check.genes
+#transcriptomics.list.to.df (error)
 
 
 
