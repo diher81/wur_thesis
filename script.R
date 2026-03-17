@@ -77,6 +77,7 @@ dir_data <- paste(dir_home, "/data/E-MTAB-11658", sep = "")
 dir_dataMA <- paste(dir_home, "/data/MA", sep = "")
 dir_functions <- paste(dir_home, "/function_scripts", sep = "")
 dir_normalized <- paste(dir_home, "/normalized", sep = "")
+dir_output <- paste(dir_home, "/output", sep = "")
 setwd(dir_home)
 
 
@@ -155,10 +156,11 @@ transformed.intensities <- transcriptomics.transform.norm(rg.normalized.intensit
                 save_dir = dir_dataMA)
 
 # Checks
-correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dir_dataMA)
+# TODO save_dir not working??
+correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dir_output)
 transcriptomics.check.genes(transformed.intensities,
                             spot.id = agi.id$gene_public_name,
-                            save_dir = dir_dataMA)
+                            save_dir = dir_output)
 
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
