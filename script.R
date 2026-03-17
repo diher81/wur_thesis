@@ -51,34 +51,24 @@ for(type in names(packages)) {
 lapply(unlist(packages), library, character.only = TRUE)
 
 
-
-# ------------------------------------------------------------------------------
-# Functions
-# ------------------------------------------------------------------------------
-
-setwd("./Function_scripts/")
-for(i in 1:length(dir())){
-  source(dir()[i])
-}
-
-
-# ------------------------------------------------------------------------------
-# Plotting themes
-# ------------------------------------------------------------------------------
-
-
-
 # ------------------------------------------------------------------------------
 # Loading data
 # ------------------------------------------------------------------------------
 
-# Set working directories
-workwd <- getwd()
-workwd_data <- "./data/E-MTAB-11658"
+# Working directories
+dir_home <- "/Users/diher/Repos/wur/thesis_dirk" 
+dir_data <- paste(dir_home, "/data/E-MTAB-11658", sep = "")
+dir_dataMA <- paste(dir_home, "/data/MA", sep = "")
+dir_functions <- paste(dir_home, "/function_scripts", sep = "")
+dir_normalized <- paste(dir_home, "/normalized", sep = "")
+setwd(dir_home)
+
+# Targets
+targets_RIL <- read.delim("./normalization/Targets_RIL.txt", stringsAsFactors=FALSE)
+agi.id <- read.delim("./normalization/ArrayID_agilentV2_WS258.txt", stringsAsFactors = FALSE)
 
 # Read raw micro-array data
-targets_RIL <- read.delim("./normalization/Targets_RIL.txt", stringsAsFactors=FALSE)
-microArrayFileNames <- targets$FileName
+microArrayFileNames <- targets_RIL$FileName
 
 # Read raw red/green intensities
 rawDataMicroArrays <- read.maimages(microArrayFileNames, source = "agilent")
@@ -93,29 +83,58 @@ head(rawDataMicroArrays$genes)
 
 
 # ------------------------------------------------------------------------------
+# Functions
+# ------------------------------------------------------------------------------
+
+setwd(dir_functions)
+for(i in 1:length(dir())){
+  source(dir()[i])
+}
+setwd(dir_home)
+
+
+# ------------------------------------------------------------------------------
+# Plotting themes
+# ------------------------------------------------------------------------------
+
+presentation <- theme(axis.text.x = element_text(size=12, face="bold", color="black"),
+                      axis.text.y = element_text(size=12, face="bold", color="black"),
+                      axis.title.x = element_text(size=14, face="bold", color="black"),
+                      axis.title.y = element_text(size=14, face="bold", color="black"),
+                      strip.text.x = element_text(size=12, face="bold", color="black"),
+                      strip.text.y = element_text(size=12, face="bold", color="black"),
+                      plot.title = element_text(size=16, face="bold"),
+                      panel.grid.minor = element_blank(),
+                      panel.grid.major = element_line(colour="lightgrey"),
+                      legend.position = "none",
+                      panel.background = element_rect(fill = "white"),
+                      panel.border = element_rect(colour="lightgrey",fill = NA))
+
+
+
+# ------------------------------------------------------------------------------
 # Data normalization
 # ------------------------------------------------------------------------------
 
 rg.norm <- transcriptomics.agilent.norm(targets = targets_RIL,
-                # array_dir = "W:/PROJECTS/NEMmasstorage/C.elegans/Data/MA/MA_elegans/", 
-                save_dir = paste(workwd,"/Normalized/",sep=""),
-                filename = filename
-                )
+                save_dir = dir_normalized)
 
 trans.int <- transcriptomics.transform.norm(rg.norm,
-                filename=filename,
-                save_dir=paste(workwd,"/Data/MA/",sep=""))
+                save_dir = dir_dataMA)
 
-###Checks
-correlsums <- transcriptomics.check.cor(trans.int,filename=filename,save_dir=paste(workwd,"/Data/MA/",sep=""))
-transcriptomics.check.genes(trans.int,spot.id=agi.id$gene_public_name,filename=filename,save_dir=paste(workwd,"/Data/MA/",sep=""))
+# Checks
+correlsums <- transcriptomics.check.cor(trans.int, 
+                                        save_dir = dir_dataMA)
+transcriptomics.check.genes(trans.int,
+                            spot.id = agi.id$gene_public_name,
+                            save_dir = dir_dataMA)
 
 ###Make a list
 colnames.sep <- ":"
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
 
 list.data <- transcriptomics.list.to.df(trans.int = trans.int, spot.id=agi.id$SpotID,colnames.sep = colnames.sep, colnames.names = colnames.names)
-save(list.data,file=paste(workwd,"/Normalized/obj_list.data.Rdata",sep=""))
+save(list.data,file=paste(dir_home, "/Normalized/obj_list.data.Rdata", sep = ""))
 
 
 
