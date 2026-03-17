@@ -14,7 +14,7 @@
 ### v1.2 the standard save location is now the workwd
 ### v1.21 function returns to original workwd
 
-transcriptomics.agilent.norm <- function(targets,bg.method,nWA.method,nBA.method,bad.arrays,array_dir,save_dir,filename){
+normalize.agilent.transcriptomics <- function(targets,bg.method,nWA.method,nBA.method,bad.arrays,array_dir,save_dir,filename){
                                 if(missing(targets)){                                   stop("Require targets for loading MA data")}
                                 if(missing(bg.method)){                                 bg.method <- "none"}
                                 if(missing(nWA.method)){                                nWA.method <- "loess"}

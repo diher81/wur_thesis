@@ -1,11 +1,11 @@
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #    ___  ___ _____        _____ _               _     
 #    |  \/  |/  ___|      |_   _| |             (_)    
 #    | .  . |\ `--.  ___    | | | |__   ___  ___ _ ___ 
 #    | |\/| | `--. \/ __|   | | | '_ \ / _ \/ __| / __|
 #    | |  | |/\__/ / (__    | | | | | |  __/\__ \ \__ \
 #    \_|  |_/\____/ \___|   \_/ |_| |_|\___||___/_|___/
-#                                                      
-#                                                      
 #    ______ _       _       _                          
 #    | ___ (_)     | |     | |                         
 #    | |_/ /_  ___ | | ___ | | __ _ _   _              
@@ -14,7 +14,6 @@
 #    \____/|_|\___/|_|\___/|_|\__, |\__, |             
 #                              __/ | __/ |             
 #                             |___/ |___/                                       
-
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # Dirk Hermans
@@ -86,16 +85,18 @@ setwd(dir_home)
 # ------------------------------------------------------------------------------
 
 # Targets
-targets_RIL <- read.delim("./normalization/Targets_RIL.txt", stringsAsFactors=FALSE)
-agi.id <- read.delim("./normalization/ArrayID_agilentV2_WS258.txt", stringsAsFactors = FALSE)
+targets_RIL <- read.delim("./normalization/Targets_RIL.txt", 
+                          stringsAsFactors=FALSE)
+agi.id <- read.delim("./normalization/ArrayID_agilentV2_WS258.txt", 
+                     stringsAsFactors = FALSE)
+
+
+# ------------------------------------------------------------------------------
+# Initial data inspection - OPTIONAL
+# ------------------------------------------------------------------------------
 
 # Read raw micro-array data
 microArrayFileNames <- targets_RIL$FileName
-
-
-# ------------------------------------------------------------------------------
-# Initial data inpection
-# ------------------------------------------------------------------------------
 
 # Read raw red/green intensities
 rawDataMicroArrays <- read.maimages(microArrayFileNames, source = "agilent")
@@ -143,23 +144,28 @@ presentation <-
 # Data normalization
 # ------------------------------------------------------------------------------
 
-rg.norm <- transcriptomics.agilent.norm(targets = targets_RIL,
+# Generate normalized data (matrix) and save the normalized data files
+# R = Red channel = Cy5
+# G = Green channel = Cy3
+rg.normalized.intensities <- normalize.agilent.transcriptomics(targets = targets_RIL,
                 save_dir = dir_normalized)
 
-trans.int <- transcriptomics.transform.norm(rg.norm,
+# Generate a list with "log2.rat.mean", "log2.int", "standard_score"
+transformed.intensities <- transcriptomics.transform.norm(rg.normalized.intensities,
                 save_dir = dir_dataMA)
 
 # Checks
-correlsums <- transcriptomics.check.cor(trans.int, 
-                                        save_dir = dir_dataMA)
-transcriptomics.check.genes(trans.int,
+correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dir_dataMA)
+transcriptomics.check.genes(transformed.intensities,
                             spot.id = agi.id$gene_public_name,
                             save_dir = dir_dataMA)
 
-###Make a list
-colnames.sep <- ":"
+# Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
-
-list.data <- transcriptomics.list.to.df(trans.int = trans.int, spot.id=agi.id$SpotID,colnames.sep = colnames.sep, colnames.names = colnames.names)
-save(list.data,file=paste(dir_home, "/Normalized/obj_list.data.Rdata", sep = ""))
+list.data <- transcriptomics.list.to.df(trans.int = transformed.intensities, 
+                                        spot.id=agi.id$SpotID,
+                                        colnames.sep = ":", 
+                                        colnames.names = colnames.names)
+save(list.data, 
+     file = paste(dir_normalized, "/obj_list.data.Rdata", sep = ""))
 
