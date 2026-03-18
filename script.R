@@ -72,12 +72,14 @@ lapply(unlist(packages), library, character.only = TRUE)
 # ------------------------------------------------------------------------------
 
 # Working directories
-dir_home <- "/Users/diher/Repos/wur/thesis_dirk" 
-dir_data <- paste(dir_home, "/data/E-MTAB-11658", sep = "")
-dir_dataMA <- paste(dir_home, "/data/MA", sep = "")
-dir_functions <- paste(dir_home, "/function_scripts", sep = "")
-dir_normalized <- paste(dir_home, "/normalized", sep = "")
-dir_output <- paste(dir_home, "/output", sep = "")
+dir_home <- "/Users/diher/Repos/wur/thesis_dirk/" 
+dir_data <- paste(dir_home, "data/E-MTAB-11658/", sep = "")
+dir_dataMA <- paste(dir_home, "data/MA/", sep = "")
+dir_functions <- paste(dir_home, "function_scripts/", sep = "")
+dir_target <- paste(dir_home, "target/", sep = "")
+dir_output <- paste(dir_home, "output/", sep = "")
+dir_normalized <- paste(dir_home, "normalized/", sep = "")
+
 setwd(dir_home)
 
 
@@ -86,9 +88,9 @@ setwd(dir_home)
 # ------------------------------------------------------------------------------
 
 # Targets
-targets_RIL <- read.delim("./normalization/Targets_RIL.txt", 
+targets_RIL <- read.delim("./target/Targets_RIL.txt", 
                           stringsAsFactors=FALSE)
-agi.id <- read.delim("./normalization/ArrayID_agilentV2_WS258.txt", 
+agi.id <- read.delim("./target/ArrayID_agilentV2_WS258.txt", 
                      stringsAsFactors = FALSE)
 
 
@@ -156,11 +158,10 @@ transformed.intensities <- transcriptomics.transform.norm(rg.normalized.intensit
                 save_dir = dir_dataMA)
 
 # Checks
-# TODO save_dir not working??
 correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dir_output)
 transcriptomics.check.genes(transformed.intensities,
                             spot.id = agi.id$gene_public_name,
-                            save_dir = dir_output)
+                            save_dir = dir_dataMA)
 
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
