@@ -182,3 +182,95 @@ list.data <- transcriptomics.list.to.df(trans.int = transformed.intensities,
 save(list.data, 
      file = paste(dir_normalized, "/obj_list.data.Rdata", sep = ""))
 
+
+# ------------------------------------------------------------------------------
+# Genetic map
+# ------------------------------------------------------------------------------
+
+# Figure 1: Genetic map --------------------------------------------------------
+
+genetic_map <- population.map;
+# replace missing values with 0
+genetic_map[is.na(genetic_map)] <- 0
+# rewrite the genetic map to a dataframe plottable in ggplot
+data.plot <- prep.ggplot.genetic.map(genetic_map, population.markers) %>%
+    dplyr::group_by(strain) %>%
+    dplyr::mutate(genotype = ifelse(genotype == 1, "N2", 
+                                    ifelse(genotype == -1, "CB4856", NA))) %>%
+    rename(start = position_start, end = position_end, gt = genotype, chrom = chromosome) %>%
+    data.frame() %>%
+    mutate(strain = as.factor(strain)) %>%
+    group_by(strain) %>%
+    dplyr::filter(!is.na(gt))
+
+data.plot$index <- dplyr::group_indices(data.plot)
+strain_index <- data.plot$strain
+names(strain_index) <- data.plot$index + 0.5    
+
+figure_1_gen_map <- ggplot(data.plot, aes(xmin = start, xmax = end, ymin = index, ymax = index + 1, fill = gt)) +
+  geom_rect() + scale_fill_manual(values = c("#0080FF","#FF8000",NA)) +
+  facet_grid(.~chrom, scales="free", space="free") +
+  presentation + xlab("Chromosome position (Mb)") + ylab("Strain") +
+  ggtitle("Figure 1: Genetic map") +
+  scale_x_continuous(labels = function(x) { x/1e6 }, expand = c(0,0)) +
+  scale_y_continuous(breaks = unique(data.plot$index) + 0.5, labels = function(x) { strain_index[as.character(x)] }, expand = c(0,0)) +
+  theme(strip.background = element_blank(), legend.position = "None", panel.spacing = unit(0,"lines"))
+print(figure_1_gen_map)
+
+
+# Figure 2: centimorgan map-----------------------------------------------------
+
+strain.map <- popmap[,-c(1:4)]
+strain.map[strain.map==0] <- NA
+
+data.plot <- genetic.distance(strain.map,popmrk)
+
+sf1b <- ggplot(data.plot,aes(x=position,y=cM)) +
+  geom_line() + geom_rug() + facet_grid(~chromosome,space = "free_x", scales = "free_x") + 
+  presentation + labs(x="Physical position (Mb)",y="Genetic position (cM)")+
+  ggtitle("Suppl figure 1B centimorgan map") +
+  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20))
+print(sf1b)
+
+
+# Figure 3: Genotype distribution ----------------------------------------------
+
+data.plot <- tidyr::gather(data.frame(cbind(popmrk,popmap[,-c(1:4)])),key=strain,value=genotype,-Name,-Chromosome,-Position) %>%
+  dplyr::group_by(Chromosome,Position,genotype) %>%
+  dplyr::summarise(n=length(genotype)) %>%
+  dplyr::mutate(genotype=ifelse(genotype==-1,"CB4856",
+                                ifelse(genotype==1,"N2","NA"))) %>%
+  data.frame() %>%
+  dplyr::mutate(genotype=factor(genotype,levels = c("NA","CB4856","N2")))
+
+sf1c <- ggplot(data.plot,aes(x=Position,y=n,fill=genotype)) +
+  geom_area() + facet_grid(~Chromosome,space = "free_x",scales="free_x") + fillScale +
+  presentation + labs(x="Position (Mb)",y="Genotype (n strains)") +
+  ggtitle("Suppl figure 1C Genotype distribution ") +
+  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20)) + scale_y_continuous(expand=c(0,0)) +
+  guides(fill=guide_legend(title="Genotype"))
+print(sf1c)
+
+
+# Figure 4: Genetic map --------------------------------------------------------
+
+BlPl <- ggplot()+geom_blank(aes(1,1))+ blank_theme
+
+lay <- rbind(c(1,2),c(1,3),c(1,4))
+
+annotation.grobA <- title.grob <- textGrob(label = "A",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobB <- title.grob <- textGrob(label = "B",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobC <- title.grob <- textGrob(label = "C",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
+
+sf1a <- arrangeGrob(sf1a,top=annotation.grobA)
+sf1a
+sf1b <- arrangeGrob(sf1b,top=annotation.grobB)
+sf1b
+sf1c <- arrangeGrob(sf1c,top=annotation.grobC)
+sf1c
+
+pdf(file="Supplementary_figure1-Genetic_map.pdf",width=10,height=14)
+grid.arrange(sf1a,sf1b,sf1c,BlPl,layout_matrix=lay,heights=c(3,3,8))
+dev.off()
+
+
