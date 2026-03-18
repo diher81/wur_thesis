@@ -93,6 +93,16 @@ targets_RIL <- read.delim("./target/Targets_RIL.txt",
 agi.id <- read.delim("./target/ArrayID_agilentV2_WS258.txt", 
                      stringsAsFactors = FALSE)
 
+# load DNAseq map
+population.map <- data.matrix(read.table(
+  "./Data/Genetic_map/asRIL_map_new.txt")[,-c(1:3,5,6,8,9,11,13)])
+population.markers <- read.table(
+  "./Data/Genetic_map/asRIL_map_new.txt")[,c(1:3)]
+IL_gen <- read.delim("./Data/Genetic_map/asIL_map_new.txt") 
+str(IL_gen) # print its structure
+IL.map <- load(file = "./Data/Genetic_map/obj_IL_map.Rdata")
+str(get(IL.map)) # print its structure
+
 
 # ------------------------------------------------------------------------------
 # Initial data inspection - OPTIONAL
