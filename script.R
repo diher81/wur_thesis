@@ -45,7 +45,8 @@ library(renv)
 packages <- list(
   cran = c(
     "tidyverse",
-    "RColorBrewer"
+    "RColorBrewer",
+    "grid"
   ),
   bioc = c("limma", 
            "statmod")
@@ -150,6 +151,17 @@ presentation <-
         legend.position = "none",
         panel.background = element_rect(fill = "white"),
         panel.border = element_rect(colour = "lightgrey", fill = NA))
+
+blank_theme <- theme(plot.background = element_blank(),
+                     panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(),
+                     panel.border = element_blank(),
+                     panel.background = element_blank(),
+                     axis.title.x = element_blank(),
+                     axis.title.y = element_blank(),
+                     axis.text.x = element_blank(),
+                     axis.text.y = element_blank(),
+                     axis.ticks = element_blank())
 
 myColors <- c(brewer.pal(9,"Set1")[c(2,5)],
               brewer.pal(9,"Purples")[c(4,6,6)],
@@ -271,23 +283,38 @@ print(figure_3_gen_distr)
 
 # Figure 4: Genetic map --------------------------------------------------------
 
-BlPl <- ggplot()+geom_blank(aes(1,1))+ blank_theme
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blank_theme
+layout <- rbind(c(1,2),c(1,3),c(1,4))
 
-lay <- rbind(c(1,2),c(1,3),c(1,4))
+annotation.grobA <- title.grob <- textGrob(label = "A",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobB <- title.grob <- textGrob(label = "B",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobC <- title.grob <- textGrob(label = "C",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
 
-annotation.grobA <- title.grob <- textGrob(label = "A",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
-annotation.grobB <- title.grob <- textGrob(label = "B",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
-annotation.grobC <- title.grob <- textGrob(label = "C",x = unit(0, "lines"),y = unit(0, "lines"),hjust = 0, vjust = 0,gp = gpar(fontsize = 20,fontface="bold"))
+graphical.oject1 <- arrangeGrob(figure_1_gen_map, top = annotation.grobA)
+graphical.oject2  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
+graphical.oject3  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
-sf1a <- arrangeGrob(sf1a,top=annotation.grobA)
-sf1a
-sf1b <- arrangeGrob(sf1b,top=annotation.grobB)
-sf1b
-sf1c <- arrangeGrob(sf1c,top=annotation.grobC)
-sf1c
-
-pdf(file="Supplementary_figure1-Genetic_map.pdf",width=10,height=14)
-grid.arrange(sf1a,sf1b,sf1c,BlPl,layout_matrix=lay,heights=c(3,3,8))
+# Open pdf device
+pdf(file = paste(dir_output, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
+# Draw to pdf
+grid.arrange(graphical.oject1, graphical.oject2, graphical.oject3, 
+             blank.plot, layout_matrix = layout, heights = c(3,3,8))
+# Close pdf
 dev.off()
 
 
