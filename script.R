@@ -44,7 +44,8 @@ library(renv)
 # Define required packages
 packages <- list(
   cran = c(
-    "tidyverse"
+    "tidyverse",
+    "RColorBrewer"
   ),
   bioc = c("limma", 
            "statmod")
@@ -99,9 +100,7 @@ population.map <- data.matrix(read.table(
 population.markers <- read.table(
   "./Data/Genetic_map/asRIL_map_new.txt")[,c(1:3)]
 IL_gen <- read.delim("./Data/Genetic_map/asIL_map_new.txt") 
-str(IL_gen) # print its structure
 IL.map <- load(file = "./Data/Genetic_map/obj_IL_map.Rdata")
-str(get(IL.map)) # print its structure
 
 
 # ------------------------------------------------------------------------------
@@ -152,6 +151,14 @@ presentation <-
         panel.background = element_rect(fill = "white"),
         panel.border = element_rect(colour = "lightgrey", fill = NA))
 
+myColors <- c(brewer.pal(9,"Set1")[c(2,5)],
+              brewer.pal(9,"Purples")[c(4,6,6)],
+              "black",
+              "darkgrey",
+              "black",
+              brewer.pal(12,"Paired")[c(1,7)],
+              rep(brewer.pal(12,"Paired")[c(8,2,7,1)],times=3))
+fillScale <- scale_fill_manual(name = "Treatment",values = myColors)
 
 # ------------------------------------------------------------------------------
 # Data normalization
@@ -220,36 +227,46 @@ print(figure_1_gen_map)
 
 # Figure 2: centimorgan map-----------------------------------------------------
 
-strain.map <- popmap[,-c(1:4)]
+strain.map <- population.map[,-c(1:4)]
 strain.map[strain.map==0] <- NA
 
-data.plot <- genetic.distance(strain.map,popmrk)
+# Calculate genetic distance between markers
+data.plot <- genetic.distance(strain.map, population.markers)
 
-sf1b <- ggplot(data.plot,aes(x=position,y=cM)) +
+figure_2_cm_map <- ggplot(data.plot,aes(x=position,y=cM)) +
   geom_line() + geom_rug() + facet_grid(~chromosome,space = "free_x", scales = "free_x") + 
-  presentation + labs(x="Physical position (Mb)",y="Genetic position (cM)")+
-  ggtitle("Suppl figure 1B centimorgan map") +
-  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20))
-print(sf1b)
+  presentation + labs(x="Physical position (Mb)", y="Genetic position (cM)") +
+  ggtitle("Figure 2: centimorgan map") +
+  scale_x_continuous(breaks=c(5,10,15,20)*10^6, labels=c(5,10,15,20))
+print(figure_2_cm_map)
 
 
 # Figure 3: Genotype distribution ----------------------------------------------
 
-data.plot <- tidyr::gather(data.frame(cbind(popmrk,popmap[,-c(1:4)])),key=strain,value=genotype,-Name,-Chromosome,-Position) %>%
-  dplyr::group_by(Chromosome,Position,genotype) %>%
-  dplyr::summarise(n=length(genotype)) %>%
-  dplyr::mutate(genotype=ifelse(genotype==-1,"CB4856",
-                                ifelse(genotype==1,"N2","NA"))) %>%
-  data.frame() %>%
-  dplyr::mutate(genotype=factor(genotype,levels = c("NA","CB4856","N2")))
+data.plot <- cbind(population.markers, population.map) %>%
+  pivot_longer(
+    cols = -c(Name, Chromosome, Position),
+    names_to = "strain",
+    values_to = "genotype"
+  ) %>%
+  group_by(Chromosome, Position, genotype) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  mutate(
+    genotype = case_when(
+      genotype == -1 ~ "CB4856",
+      genotype == 1  ~ "N2",
+      TRUE           ~ "NA"
+    ),
+    genotype = factor(genotype, levels = c("NA", "CB4856", "N2"))
+  )
 
-sf1c <- ggplot(data.plot,aes(x=Position,y=n,fill=genotype)) +
-  geom_area() + facet_grid(~Chromosome,space = "free_x",scales="free_x") + fillScale +
-  presentation + labs(x="Position (Mb)",y="Genotype (n strains)") +
-  ggtitle("Suppl figure 1C Genotype distribution ") +
-  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20)) + scale_y_continuous(expand=c(0,0)) +
-  guides(fill=guide_legend(title="Genotype"))
-print(sf1c)
+figure_3_gen_distr <- ggplot(data.plot,aes(x = Position, y = n, fill = genotype)) +
+  geom_area() + facet_grid(~Chromosome, space = "free_x", scales="free_x") + fillScale +
+  presentation + labs(x = "Position (Mb)", y = "Genotype (n strains)") +
+  ggtitle("Figure 3: Genotype distribution ") +
+  scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) + scale_y_continuous(expand = c(0,0)) +
+  guides(fill = guide_legend(title = "Genotype"))
+print(figure_3_gen_distr)
 
 
 # Figure 4: Genetic map --------------------------------------------------------
