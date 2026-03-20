@@ -3,7 +3,7 @@
 
 ###input
 #strain.map (of the investigated strains: markers in rows, genotypes in columns)
-#strain.marker (of the invesigated strains: markers in rows, with columns name, chromosome and position)
+#strain.marker (of the investigated strains: markers in rows, with columns name, chromosome and position)
 #chromosomes (character vector with chromosome names; standard is C. elegans)
 #chromosome_size (numeric vector with chromosome sizes; standard is C. elegans)
 #ignore.na (logic, tells if NAs should be incorporated in the analysis)
@@ -16,9 +16,7 @@
 #ignore.na makes the algorithm find te nearest non-NA marker
 
 
-
-
-genetic.distance <- function(strain.map,strain.marker,chromosomes,chromosome_size,ignore.na){
+genetic.distance <- function(strain.map, strain.marker, chromosomes, chromosome_size, ignore.na){
                             if(missing(strain.map)){                             
                               stop("Requires genetic map with markers per row and strains per column")}
                             if(missing(strain.marker)){                          
@@ -33,7 +31,13 @@ genetic.distance <- function(strain.map,strain.marker,chromosomes,chromosome_siz
                               ignore.na <- FALSE}
 
                             ###rolling mean function
-                            rollingmean <- function(x){out <- NULL; for(i in 2:length(x)){out <- c(out,mean(x[(i-1):i]))};return(out)}
+                            rollingmean <- function(x){
+                              out <- NULL
+                              for(i in 2:length(x)){
+                                out <- c(out,mean(x[(i-1):i]))
+                                }
+                              return(out)
+                              }
 
                             ###make colnames comply to format
                             colnames(strain.marker) <- c("name", "chromosome", "position")
@@ -43,8 +47,8 @@ genetic.distance <- function(strain.map,strain.marker,chromosomes,chromosome_siz
 
                             ###per chromosome
                             for(i in 1:length(chromosomes)){
-                                currchr <- strain.map[strain.marker[,2]==chromosomes[i],]
-                                currmrk <- strain.marker[strain.marker[,2]==chromosomes[i],]
+                                currchr <- strain.map[strain.marker[,2] == chromosomes[i],]
+                                currmrk <- strain.marker[strain.marker[,2] == chromosomes[i],]
                                 ###fills in gaps based on the genotype of the closest non-NA marker
                                 if(!ignore.na){
                                     for(j in 1:ncol(currchr)){
@@ -63,19 +67,22 @@ genetic.distance <- function(strain.map,strain.marker,chromosomes,chromosome_siz
                                 }
 
                                 ###count recombinations
-                                diffmap <- apply(currchr,2,diff) != 0
+                                diffmap <- apply(currchr, 2, diff) != 0
 
-                                notrecomb <- apply(!diffmap & !is.na(diffmap),1,sum)
-                                yesrecomb <- apply(diffmap & !is.na(diffmap),1,sum)
+                                notrecomb <- apply(!diffmap & !is.na(diffmap), 1, sum)
+                                yesrecomb <- apply(diffmap & !is.na(diffmap), 1, sum)
 
                                 fractions <- cumsum(yesrecomb/(notrecomb+yesrecomb))
-                                fractions <- c(fractions[1],fractions,rev(fractions)[1])
+                                fractions <- c(fractions[1], fractions, rev(fractions)[1])
 
                                 locations <- rollingmean(currmrk[,3])
-                                locations <- c(1,locations,chromosome_size[i])
+                                locations <- c(1, locations, chromosome_size[i])
 
                                 ###into output
-                                output <- rbind(output,cbind(chromosome=chromosomes[i],position=locations,cM=fractions))
+                                output <- rbind(output,
+                                                cbind(chromosome = chromosomes[i], 
+                                                      position = locations, 
+                                                      cM = fractions))
                             }
                             output <- data.frame(output)
                                 output[,1] <- as.character(unlist(output[,1]))

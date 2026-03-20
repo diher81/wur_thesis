@@ -3,7 +3,7 @@
 
 ###input
 #strain.map (of the investigated strains: markers in rows, genotypes in columns)
-#strain.marker (of the invesigated strains: markers in rows, with columns name, chromosome and position)
+#strain.marker (of the investigated strains: markers in rows, with columns name, chromosome and position)
 
 ###output
 #dataframe with columns: strain, chromosome, position_start, position_end, and genotype
@@ -32,22 +32,22 @@ prep.ggplot.genetic.map <- function(strain.map, strain.marker){
           tmp <- as.data.frame(cbind(name = as.character(unlist(strain.marker[,1])),
                                  chromosome = as.character(unlist(strain.marker[,2])),
                                  position = as.numeric(as.character(unlist(strain.marker[,3]))),
-                                 strain = rep(colnames(strain.map),each = nrow(strain.map)),
+                                 strain = rep(colnames(strain.map), each = nrow(strain.map)),
                                  genotype = as.numeric(strain.map),
                                  # Genotype change indicators
-                                 diff_left = as.numeric(rbind(diffmap,FALSE)),
-                                 diff_right = as.numeric(rbind(FALSE,diffmap)),
+                                 diff_left = as.numeric(rbind(diffmap, FALSE)),
+                                 diff_right = as.numeric(rbind(FALSE, diffmap)),
                                  # Chromosome boundary indicators
-                                 chr_left = as.numeric(c(chrmap,TRUE)),
-                                 chr_right = as.numeric(c(TRUE,chrmap))))
+                                 chr_left = as.numeric(c(chrmap, TRUE)),
+                                 chr_right = as.numeric(c(TRUE, chrmap))))
           for(i in c(3,5:9)){
               tmp[,i] <- as.numeric(as.character(unlist(tmp[,i])))
           }
 
-          tmp <- cbind(tmp[,1:5],diffs=apply(tmp[,6:9],1,sum))
+          tmp <- cbind(tmp[,1:5], diffs = apply(tmp[,6:9],1,sum))
           tmp <- tmp[tmp[,6] != 0,]
 
-          tmp <- cbind(tmp[-nrow(tmp),-6],tmp[-1,-6])
+          tmp <- cbind(tmp[-nrow(tmp),-6], [-1,-6])
           tmp <- tmp[tmp[,2] == tmp[,7] & tmp[,4] == tmp[,9] & tmp[,5] == tmp[,10],]
 
           output <- as.data.frame(cbind(strain = as.character(unlist(tmp[,4])),
