@@ -47,7 +47,7 @@ prep.ggplot.genetic.map <- function(strain.map, strain.marker){
           tmp <- cbind(tmp[,1:5], diffs = apply(tmp[,6:9],1,sum))
           tmp <- tmp[tmp[,6] != 0,]
 
-          tmp <- cbind(tmp[-nrow(tmp),-6], [-1,-6])
+          tmp <- cbind(tmp[-nrow(tmp),-6],tmp[-1,-6])
           tmp <- tmp[tmp[,2] == tmp[,7] & tmp[,4] == tmp[,9] & tmp[,5] == tmp[,10],]
 
           output <- as.data.frame(cbind(strain = as.character(unlist(tmp[,4])),
