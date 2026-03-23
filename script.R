@@ -195,12 +195,12 @@ transcriptomics.check.genes(transformed.intensities,
 
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
-list.data <- transcriptomics.list.to.df(trans.int = transformed.intensities, 
+list.data.RIL <- transcriptomics.list.to.df(trans.int = transformed.intensities, 
                                         spot.id=agi.id$SpotID,
                                         colnames.sep = ":", 
                                         colnames.names = colnames.names)
-save(list.data, 
-     file = paste(dir_normalized, "/obj_list.data.Rdata", sep = ""))
+save(list.data.RIL, 
+     file = paste(dir_normalized, "/obj_list.data.RIL.Rdata", sep = ""))
 
 
 # ------------------------------------------------------------------------------
@@ -210,7 +210,6 @@ save(list.data,
 # Figure 1: Genetic map --------------------------------------------------------
 
 genetic_map <- population.map;
-# replace missing values with 0
 genetic_map[is.na(genetic_map)] <- 0
 # rewrite the genetic map to a dataframe plottable in ggplot
 data.plot.gen.map <- prep.ggplot.genetic.map(genetic_map, population.markers) %>%
@@ -276,7 +275,7 @@ data.plot.gen.dis <- cbind(population.markers, population.map) %>%
 figure_3_gen_distr <- ggplot(data.plot.gen.dis, aes(x = Position, y = n, fill = genotype)) +
   geom_area() + facet_grid(~Chromosome, space = "free_x", scales="free_x") + fillScale +
   presentation + labs(x = "Position (Mb)", y = "Genotype (n strains)") +
-  ggtitle("Figure 3: Genotype distribution ") +
+  ggtitle("Figure 3: Genotype distribution") +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6, 
                      labels = c(5,10,15,20)) + scale_y_continuous(expand = c(0,0)) + guides(fill = guide_legend(title = "Genotype"))
 print(figure_3_gen_distr)
@@ -319,3 +318,47 @@ grid.arrange(graphical.oject1, graphical.oject2, graphical.oject3,
 dev.off()
 
 
+# ------------------------------------------------------------------------------
+# eQTL
+# ------------------------------------------------------------------------------
+
+# Figure 5: RILs used for eQTL mapping
+popmap_in <- population.map
+popmap_in[is.na(popmap_in)] <- 0
+data.plot.RIL <- prep.ggplot.genetic.map(popmap_in, population.markers) %>%
+  dplyr::filter(strain %in% list.data.RIL$strain, 
+                !strain %in% c("N2", "CB4856", "NL5901", "SCH4856")) %>%
+  dplyr::mutate(index = as.numeric(as.factor(strain)),
+                genotype_name = ifelse(genotype == -1, "CB4856", ifelse(genotype == 1, "N2", NA))) %>%
+  dplyr::filter(!is.na(genotype_name))
+
+fig5_RILs.for.eQTL.mapping <- ggplot(
+  data.plot,
+  aes(xmin = position_start,
+      xmax = position_end,
+      ymin = index,
+      ymax = index + 1,
+      fill = genotype_name)) +
+  geom_rect(aes(alpha = 0.8)) +
+  facet_grid(. ~ chromosome, scales = "free_x", space = "free_x") +
+  fillScale +
+  presentation +
+  theme(
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank(),
+    panel.spacing = unit(0.1, "lines")) +
+  scale_y_continuous(
+    breaks = unique(data.plot$index) + 0.5,
+    labels = unique(data.plot$strain),
+    expand = c(0, 0.5)) + 
+  scale_x_continuous(
+    breaks = c(5, 10, 15, 20) * 10^6,
+    labels = c(5, 10, 15, 20),
+    expand = c(0, 0.5)
+  ) +
+  xlab("Genomic location (Mbp)") +
+  ylab("Strain") +
+  ggtitle("Figure 5: RILs used for eQTL mapping") 
+
+fig5_RILs.for.eQTL.mapping
