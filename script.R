@@ -362,3 +362,19 @@ fig5_RILs.for.eQTL.mapping <- ggplot(
   ggtitle("Figure 5: RILs used for eQTL mapping") 
 
 fig5_RILs.for.eQTL.mapping
+
+
+###eQTL mapping
+data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
+  dplyr::select(SpotID, strain, log2_intensities) %>%
+  spread(key = strain, value = log2_intensities) %>%
+  tibble::column_to_rownames("SpotID")
+
+data.eQTL <- data.matrix(data.eQTL)
+
+data.eQTL <- QTL.data.prep(data.eQTL, colnames(data.eQTL), population.map, population.markers)
+lapply(data.eQTL, head)       
+
+#Error in gzfile(file, "wb") : cannot open the connection
+aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
+save(aS.eQTL, file="./Output/obj_aS.eQTL.Rdata")
