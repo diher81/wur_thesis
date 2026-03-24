@@ -75,15 +75,15 @@ lapply(unlist(packages), library, character.only = TRUE)
 # ------------------------------------------------------------------------------
 
 # Working directories
-dir_home <- "/Users/diher/Repos/wur/thesis_dirk/" 
-dir_data <- paste(dir_home, "data/E-MTAB-11658/", sep = "")
-dir_dataMA <- paste(dir_home, "data/MA/", sep = "")
-dir_functions <- paste(dir_home, "function_scripts/", sep = "")
-dir_target <- paste(dir_home, "target/", sep = "")
-dir_output <- paste(dir_home, "output/", sep = "")
-dir_normalized <- paste(dir_home, "normalized/", sep = "")
+dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
+dirData <- paste(dirHome, "data/E-MTAB-11658/", sep = "")
+dirDataMA <- paste(dirHome, "data/MA/", sep = "")
+dirFunctions <- paste(dirHome, "function_scripts/", sep = "")
+dirTarget <- paste(dirHome, "target/", sep = "")
+dirOutput <- paste(dirHome, "output/", sep = "")
+dirNormalized <- paste(dirHome, "normalized/", sep = "")
 
-setwd(dir_home)
+setwd(dirHome)
 
 
 # ------------------------------------------------------------------------------
@@ -131,11 +131,11 @@ if(inspectData){
 # Functions
 # ------------------------------------------------------------------------------
 
-setwd(dir_functions)
+setwd(dirFunctions)
 for(i in 1:length(dir())){
   source(dir()[i])
 }
-setwd(dir_home)
+setwd(dirHome)
 
 
 # ------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ presentation <-
         panel.background = element_rect(fill = "white"),
         panel.border = element_rect(colour = "lightgrey", fill = NA))
 
-blank_theme <- theme(plot.background = element_blank(),
+blankTheme <- theme(plot.background = element_blank(),
                      panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(),
                      panel.border = element_blank(),
@@ -184,17 +184,17 @@ fillScale <- scale_fill_manual(name = "Treatment",values = myColors)
 # R = Red channel = Cy5
 # G = Green channel = Cy3
 rg.normalized.intensities <- normalize.agilent.transcriptomics(targets = targets_RIL,
-                save_dir = dir_normalized)
+                save_dir = dirNormalized)
 
 # Generate a list with "log2.rat.mean", "log2.int", "standard_score"
 transformed.intensities <- transcriptomics.transform.norm(rg.normalized.intensities,
-                save_dir = dir_dataMA)
+                save_dir = dirDataMA)
 
 # Checks
-correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dir_output)
+correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dirOutput)
 transcriptomics.check.genes(transformed.intensities,
                             spot.id = agi.id$gene_public_name,
-                            save_dir = dir_dataMA)
+                            save_dir = dirDataMA)
 
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
@@ -203,7 +203,7 @@ list.data.RIL <- transcriptomics.list.to.df(trans.int = transformed.intensities,
                                         colnames.sep = ":", 
                                         colnames.names = colnames.names)
 save(list.data.RIL, 
-     file = paste(dir_normalized, "/obj_list.data.RIL.Rdata", sep = ""))
+     file = paste(dirNormalized, "/obj_list.data.RIL.Rdata", sep = ""))
 
 
 # ------------------------------------------------------------------------------
@@ -286,7 +286,7 @@ print(figure_3_gen_distr)
 
 # Figure 4: Genetic map --------------------------------------------------------
 
-blank.plot <- ggplot() + geom_blank(aes(1,1)) + blank_theme
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 layout <- rbind(c(1,2),c(1,3),c(1,4))
 
 annotation.grobA <- title.grob <- textGrob(label = "A",
@@ -313,7 +313,7 @@ graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
 graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
 # Open pdf device
-pdf(file = paste(dir_output, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
+pdf(file = paste(dirOutput, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
 # Draw to pdf
 grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
              blank.plot, layout_matrix = layout, heights = c(3,3,8))
@@ -382,14 +382,10 @@ preparedEqtlData <- QTL.data.prep(rilLog2IntensitiesMatrix,
                            population.markers)
 lapply(preparedEqtlData, head)  
 
-#Error in gzfile(file, "wb") : cannot open the connection
-#browser()
+# Generate a list with names: LOD, Effect, Trait, Map, and Marker.
 aS.eQTL <- QTL.map.1(preparedEqtlData[[1]], preparedEqtlData[[2]], preparedEqtlData[[3]])
-#browser()
-#save(aS.eQTL, file="./Output/obj_aS.eQTL.Rdata")
-
 save(aS.eQTL, 
-     file = paste(dir_output, "/obj_aS.eQTL.Rdata", sep = ""))
+     file = paste(dirOutput, "/obj_aS.eQTL.Rdata", sep = ""))
 
 
 
