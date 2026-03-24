@@ -109,20 +109,23 @@ IL.map <- load(file = "./Data/Genetic_map/obj_IL_map.Rdata")
 # Initial data inspection - OPTIONAL
 # ------------------------------------------------------------------------------
 
-# Read raw micro-array data
-microArrayFileNames <- targets_RIL$FileName
+inspectData = FALSE
 
-# Read raw red/green intensities
-rawDataMicroArrays <- read.maimages(microArrayFileNames, source = "agilent")
-
-# A quick glance at the data loaded
-dim(rawDataMicroArrays$R)
-dim(rawDataMicroArrays$G)
-names(rawDataMicroArrays)
-summary(as.vector(rawDataMicroArrays$R))
-summary(as.vector(rawDataMicroArrays$G))
-head(rawDataMicroArrays$genes)
-
+if(inspectData){
+    # Read raw micro-array data
+    microArrayFileNames <- targets_RIL$FileName
+    
+    # Read raw red/green intensities
+    rawDataMicroArrays <- read.maimages(microArrayFileNames, source = "agilent")
+    
+    # A quick glance at the data loaded
+    dim(rawDataMicroArrays$R)
+    dim(rawDataMicroArrays$G)
+    names(rawDataMicroArrays)
+    summary(as.vector(rawDataMicroArrays$R))
+    summary(as.vector(rawDataMicroArrays$G))
+    head(rawDataMicroArrays$genes)
+}
 
 # ------------------------------------------------------------------------------
 # Functions
@@ -305,14 +308,14 @@ annotation.grobC <- title.grob <- textGrob(label = "C",
                                            vjust = 0,
                                            gp = gpar(fontsize = 20,fontface="bold"))
 
-graphical.oject1 <- arrangeGrob(figure_1_gen_map, top = annotation.grobA)
-graphical.oject2  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
-graphical.oject3  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
+graph.oject.gen.map <- arrangeGrob(figure_1_gen_map, top = annotation.grobA)
+graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
+graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
 # Open pdf device
 pdf(file = paste(dir_output, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
 # Draw to pdf
-grid.arrange(graphical.oject1, graphical.oject2, graphical.oject3, 
+grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
              blank.plot, layout_matrix = layout, heights = c(3,3,8))
 # Close pdf
 dev.off()
@@ -329,11 +332,13 @@ data.plot.RIL <- prep.ggplot.genetic.map(popmap_in, population.markers) %>%
   dplyr::filter(strain %in% list.data.RIL$strain, 
                 !strain %in% c("N2", "CB4856", "NL5901", "SCH4856")) %>%
   dplyr::mutate(index = as.numeric(as.factor(strain)),
-                genotype_name = ifelse(genotype == -1, "CB4856", ifelse(genotype == 1, "N2", NA))) %>%
+                genotype_name = ifelse(genotype == -1, 
+                                       "CB4856", 
+                                       ifelse(genotype == 1, "N2", NA))) %>%
   dplyr::filter(!is.na(genotype_name))
 
 fig5_RILs.for.eQTL.mapping <- ggplot(
-  data.plot,
+  data.plot.RIL,
   aes(xmin = position_start,
       xmax = position_end,
       ymin = index,
@@ -349,8 +354,8 @@ fig5_RILs.for.eQTL.mapping <- ggplot(
     axis.text.y = element_blank(),
     panel.spacing = unit(0.1, "lines")) +
   scale_y_continuous(
-    breaks = unique(data.plot$index) + 0.5,
-    labels = unique(data.plot$strain),
+    breaks = unique(data.plot.RIL$index) + 0.5,
+    labels = unique(data.plot.RIL$strain),
     expand = c(0, 0.5)) + 
   scale_x_continuous(
     breaks = c(5, 10, 15, 20) * 10^6,
@@ -363,18 +368,30 @@ fig5_RILs.for.eQTL.mapping <- ggplot(
 
 fig5_RILs.for.eQTL.mapping
 
-
 ###eQTL mapping
-data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
+rilLog2Intensities <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
   dplyr::select(SpotID, strain, log2_intensities) %>%
   spread(key = strain, value = log2_intensities) %>%
   tibble::column_to_rownames("SpotID")
 
-data.eQTL <- data.matrix(data.eQTL)
+rilLog2IntensitiesMatrix <- data.matrix(rilLog2Intensities)
 
-data.eQTL <- QTL.data.prep(data.eQTL, colnames(data.eQTL), population.map, population.markers)
-lapply(data.eQTL, head)       
+preparedEqtlData <- QTL.data.prep(rilLog2IntensitiesMatrix, 
+                           colnames(rilLog2IntensitiesMatrix), 
+                           population.map, 
+                           population.markers)
+lapply(preparedEqtlData, head)  
 
 #Error in gzfile(file, "wb") : cannot open the connection
-aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
-save(aS.eQTL, file="./Output/obj_aS.eQTL.Rdata")
+#browser()
+aS.eQTL <- QTL.map.1(preparedEqtlData[[1]], preparedEqtlData[[2]], preparedEqtlData[[3]])
+#browser()
+#save(aS.eQTL, file="./Output/obj_aS.eQTL.Rdata")
+
+save(aS.eQTL, 
+     file = paste(dir_output, "/obj_aS.eQTL.Rdata", sep = ""))
+
+
+
+
+

@@ -31,10 +31,11 @@ QTL.map.1 <- function(trait.matrix,strain.map,strain.marker){
                           rownames(trait.matrix) <- c("A","B")
                           small <- TRUE
                       }
-
+                      
                       eff.out <- matrix(NA,nrow(trait.matrix),nrow(strain.map))
                       pval.out <- matrix(NA,nrow(trait.matrix),nrow(strain.map))
 
+                      
                       for(i in 1:nrow(strain.map)){
                           noseg <- length(unique(strain.map[i,])) ==1
                           if(noseg){
@@ -54,6 +55,8 @@ QTL.map.1 <- function(trait.matrix,strain.map,strain.marker){
                           eff.out[,i] <- output.tmp[,2]
                           pval.out[,i] <- output.tmp[,1]
                       }
+                      
+                     
                       if(!small){
                         colnames(eff.out) <- rownames(strain.marker)
                         rownames(eff.out) <- rownames(trait.matrix)
