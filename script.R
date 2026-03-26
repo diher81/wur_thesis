@@ -389,11 +389,11 @@ save(aS.eQTL,
      file = paste(dirOutput, "/obj_aS.eQTL.Rdata", sep = ""))
 
 # Built eQTL list file with calculated threshold value 4.3
-peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
-  QTL.peak.finder(threshold = 4.3)
-
-save(peak.aS.eQTL, 
-     file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
+# These lines are not executable on workstations due to memory limits
+# peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
+#   QTL.peak.finder(threshold = 4.3)
+# save(peak.aS.eQTL, 
+#      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
 
 
 
