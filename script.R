@@ -76,7 +76,7 @@ lapply(unlist(packages), library, character.only = TRUE)
 
 # Working directories
 dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
-dirData <- paste(dirHome, "data/E-MTAB-11658/", sep = "")
+dirData <- paste(dirHome, "data/", sep = "")
 dirDataMA <- paste(dirHome, "data/MA/", sep = "")
 dirFunctions <- paste(dirHome, "function_scripts/", sep = "")
 dirTarget <- paste(dirHome, "target/", sep = "")
@@ -173,8 +173,9 @@ myColors <- c(brewer.pal(9,"Set1")[c(2,5)],
               "darkgrey",
               "black",
               brewer.pal(12,"Paired")[c(1,7)],
-              rep(brewer.pal(12,"Paired")[c(8,2,7,1)],times=3))
-fillScale <- scale_fill_manual(name = "Treatment",values = myColors)
+              rep(brewer.pal(12,"Paired")[c(8,2,7,1)], times = 3))
+fillScale <- scale_fill_manual(name = "Treatment", values = myColors)
+colScale <- scale_colour_manual(name = "Treatment", values = myColors)
 
 # ------------------------------------------------------------------------------
 # Data normalization
@@ -369,7 +370,7 @@ fig5_RILs.for.eQTL.mapping <- ggplot(
 
 fig5_RILs.for.eQTL.mapping
 
-###eQTL mapping
+# eQTL mapping
 data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
   dplyr::select(SpotID, strain, log2_intensities) %>%
   spread(key = strain, value = log2_intensities) %>%
@@ -394,13 +395,14 @@ save(aS.eQTL,
 #   QTL.peak.finder(threshold = 4.3)
 # save(peak.aS.eQTL, 
 #      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
-peak.aS.eQTL <- load(file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
+obj_name <- load(file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
+peak.aS.eQTL <- get(obj_name)
 
-###Create eQTL table
+# Create eQTL table
 aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL, 
                                 cis.trans.window = "LOD.drop",
-                                trait.annotation = cbind(trait = Agilent.Ce.V2[,1],
-                                                         dplyr::select(Agilent.Ce.V2,
+                                trait.annotation = cbind(trait = agi.id[,1],
+                                                         dplyr::select(agi.id,
                                                                        chromosome, 
                                                                        gene_bp_start, 
                                                                        gene_WBID, 
@@ -413,24 +415,28 @@ aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL,
   filter(!is.na(gene_bp), qtl_representative == "yes") %>%
   arrange(trait); head(aS.eQTL.table)
 
-###add transband
-call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table,window = 0.5e6)
+# Add transband
+call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table, window = 0.5e6)
 
-qpois(0.0001,18.36,lower.tail=F)
+qpois(0.0001, 18.36, lower.tail = F)
 
-aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,call.transbands.file,merge_condition = 1)
+aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
+                                       call.transbands.file,
+                                       merge_condition = 1)
 
-###save
-save(aS.eQTL.table,file="./Output/obj_aS.eQTL.table.Rdata")            
+# Save
+save(aS.eQTL.table, 
+     file = paste(dirOutput, "obj_aS.eQTL.table.Rdata", sep = ""))         
 
 ###Stats for text
 ###genes in TB
-sum(table(aS.eQTL.table$trans_band))-table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band))=="none"]
+sum(table(aS.eQTL.table$trans_band)) 
+- table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band)) == "none"]
 
 1167/2406
 
 ###number of TB
-length(table(aS.eQTL.table$trans_band))-1
+length(table(aS.eQTL.table$trans_band)) - 1
 
 ###cis /trans
 table(aS.eQTL.table$qtl_type)
@@ -441,4 +447,64 @@ length(unique(aS.eQTL.table$gene_WBID))
 ###TBs on chromosome V
 table(aS.eQTL.table$trans_band)
 
+
+# ------------------------------------------------------------------------------
+# power analysis (R only step)
+# ------------------------------------------------------------------------------
+
+# Conduct mapping simulation to investigate power
+aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
+                               strain.marker = data.eQTL$Marker,
+                               threshold = 4.3,
+                               n_per_marker = 10)
+
+aS.simulation
+save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
+
+###eQTL table (supplementary table 5)
+
+load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
+
+writexl::write_xlsx(aS.eQTL.table,
+                    path = paste(dirOutput, "Supplementary_table5-eQTL.xlsx", sep = ""))
+
+
+###eQTL visualization (figure 1C & D) #####################################
+load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
+
+plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
+
+f1c <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
+  geom_segment(aes(x = qtl_bp_left,
+                   y = gene_bp,
+                   xend = qtl_bp_right,
+                   yend = gene_bp),
+               alpha = 0.25,colour = "darkgrey") + 
+  geom_point(aes(colour  =  qtl_type),
+             size = 0.6, alpha = 0.5)  +
+  facet_grid(gene_chromosome ~ qtl_chromosome, 
+             space  =  "free",
+             scales = "free") + 
+  presentation + colScale + 
+  theme(legend.position  =  "none") +
+  labs(x = "eQTL peak position (Mb)",
+       y = "Gene position (Mb)") + 
+  theme(panel.spacing = unit(0.1,"lines")) +
+  scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
+  scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
+
+f1c
+
+plot.data <- filter(aS.eQTL.table,qtl_type=="trans") %>%
+  prep.ggplot.eQTL.table() 
+
+
+f1d <- ggplot(plot.data, aes(x=qtl_bp,fill=qtl_type)) +
+  geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty=2,lwd=1.2) +
+  facet_grid(c("")~qtl_chromosome, space = "free",scales="free") + presentation + 
+  fillScale + theme(legend.position = "none",panel.spacing=unit(0.1,"lines")) +
+  labs(x="eQTL peak position (Mb)",y="eQTL counts") +
+  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20))
+
+f1d
 
