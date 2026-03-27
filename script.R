@@ -394,6 +394,51 @@ save(aS.eQTL,
 #   QTL.peak.finder(threshold = 4.3)
 # save(peak.aS.eQTL, 
 #      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
+peak.aS.eQTL <- load(file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
 
+###Create eQTL table
+aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL, 
+                                cis.trans.window = "LOD.drop",
+                                trait.annotation = cbind(trait = Agilent.Ce.V2[,1],
+                                                         dplyr::select(Agilent.Ce.V2,
+                                                                       chromosome, 
+                                                                       gene_bp_start, 
+                                                                       gene_WBID, 
+                                                                       gene_sequence_name, 
+                                                                       gene_public_name))) %>%
+  QTL.table.addR2(aS.eQTL) %>%
+  group_by(gene_public_name,qtl_chromosome) %>%
+  mutate(qtl_representative=ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
+  data.frame() %>%
+  filter(!is.na(gene_bp), qtl_representative == "yes") %>%
+  arrange(trait); head(aS.eQTL.table)
+
+###add transband
+call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table,window = 0.5e6)
+
+qpois(0.0001,18.36,lower.tail=F)
+
+aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,call.transbands.file,merge_condition = 1)
+
+###save
+save(aS.eQTL.table,file="./Output/obj_aS.eQTL.table.Rdata")            
+
+###Stats for text
+###genes in TB
+sum(table(aS.eQTL.table$trans_band))-table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band))=="none"]
+
+1167/2406
+
+###number of TB
+length(table(aS.eQTL.table$trans_band))-1
+
+###cis /trans
+table(aS.eQTL.table$qtl_type)
+
+###total
+length(unique(aS.eQTL.table$gene_WBID))
+
+###TBs on chromosome V
+table(aS.eQTL.table$trans_band)
 
 
