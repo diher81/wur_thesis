@@ -47,7 +47,9 @@ packages <- list(
     "tidyverse",
     "RColorBrewer",
     "grid",
-    "gridExtra"
+    "gridExtra",
+    "jsonlite",
+    "httr"
   ),
   bioc = c("limma", 
            "statmod")
@@ -531,5 +533,14 @@ f1d
 aS.eQTL.table <- aS.eQTL.table %>%
   dplyr::filter(qtl_chromosome == "III",
                 dplyr::between(qtl_bp, 1800000, 2000000))
+
+# Get a list of selected gene names and copy paste the result in
+# https://wormbase.org/tools/mine/simplemine.cgi to generate an overview
+# of their functions
+genes <- unique(aS.eQTL.table$gene_public_name)
+genes <- genes[!is.na(genes)]
+cat(genes, sep = "\n")
+
+
 
 
