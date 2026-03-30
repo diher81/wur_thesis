@@ -416,10 +416,16 @@ aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL,
   arrange(trait); head(aS.eQTL.table)
 
 # Add transband
-call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table, window = 0.5e6)
+call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table, 
+                                          window = 0.5e6,
+                                          chromosomes = "III",
+                                          chromosome_size = 13783801)
 
+# This function finds the number of successes that corresponds to a certain percentile based on an average rate of success.
+# In other words, we can say as this function returns the value of the inverse Poisson cumulative density function
 qpois(0.0001, 18.36, lower.tail = F)
 
+# Adds whether a QTL is located in a trans-band (or cis-enriched area)
 aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
                                        call.transbands.file,
                                        merge_condition = 1)
@@ -430,9 +436,9 @@ save(aS.eQTL.table,
 
 ###Stats for text
 ###genes in TB
-sum(table(aS.eQTL.table$trans_band)) 
-- table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band)) == "none"]
+sum(table(aS.eQTL.table$trans_band)) - table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band)) == "none"]
 
+# verhouding trans and cis eQTL
 1167/2406
 
 ###number of TB
@@ -444,7 +450,7 @@ table(aS.eQTL.table$qtl_type)
 ###total
 length(unique(aS.eQTL.table$gene_WBID))
 
-###TBs on chromosome V
+###TBs on chromosome III
 table(aS.eQTL.table$trans_band)
 
 
@@ -453,6 +459,7 @@ table(aS.eQTL.table$trans_band)
 # ------------------------------------------------------------------------------
 
 # Conduct mapping simulation to investigate power
+# +/- 35 min
 aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
                                strain.marker = data.eQTL$Marker,
                                threshold = 4.3,
@@ -461,15 +468,17 @@ aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
 aS.simulation
 save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
 
-###eQTL table (supplementary table 5)
+# Instead of generating: load previously generated aS.simulation here:
+load(file.path(dirOutput, "aS.simulation.RData"))
 
+
+# eQTL table (supplementary table 5)
 load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
 
 writexl::write_xlsx(aS.eQTL.table,
                     path = paste(dirOutput, "Supplementary_table5-eQTL.xlsx", sep = ""))
 
-
-###eQTL visualization (figure 1C & D) #####################################
+# eQTL visualization (figure 1C & D) 
 load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
 
 plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
@@ -489,22 +498,38 @@ f1c <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   theme(legend.position  =  "none") +
   labs(x = "eQTL peak position (Mb)",
        y = "Gene position (Mb)") + 
+  ggtitle("Figure 1c: positions") +
   theme(panel.spacing = unit(0.1,"lines")) +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
   scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
 
 f1c
 
-plot.data <- filter(aS.eQTL.table,qtl_type=="trans") %>%
+plot.data <- filter(aS.eQTL.table, qtl_type == "trans") %>%
   prep.ggplot.eQTL.table() 
 
 
-f1d <- ggplot(plot.data, aes(x=qtl_bp,fill=qtl_type)) +
-  geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty=2,lwd=1.2) +
-  facet_grid(c("")~qtl_chromosome, space = "free",scales="free") + presentation + 
-  fillScale + theme(legend.position = "none",panel.spacing=unit(0.1,"lines")) +
-  labs(x="eQTL peak position (Mb)",y="eQTL counts") +
-  scale_x_continuous(breaks=c(5,10,15,20)*10^6,labels=c(5,10,15,20))
+f1d <- ggplot(plot.data, aes(x = qtl_bp,fill = qtl_type)) +
+  geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty = 2,lwd = 1.2) +
+  facet_grid(c("")~qtl_chromosome, space  =  "free",scales = "free") + presentation + 
+  fillScale + theme(legend.position  =  "none",
+                    panel.spacing = unit(0.1,"lines")) +
+  labs(x = "eQTL peak position (Mb)", y = "eQTL counts") +
+  ggtitle("Figure 1d: eQTL") +
+  scale_x_continuous(breaks = c(5,10,15,20)*10^6,
+                     labels = c(5,10,15,20))
 
 f1d
+
+
+# ------------------------------------------------------------------------------
+# Filter out genes of interest
+# ------------------------------------------------------------------------------
+
+# Filter out genes between 1,8M bp and 2M bp.
+# see trans band (= eQTL hotspot)
+aS.eQTL.table <- aS.eQTL.table %>%
+  dplyr::filter(qtl_chromosome == "III",
+                dplyr::between(qtl_bp, 1800000, 2000000))
+
 
