@@ -48,8 +48,8 @@ packages <- list(
     "RColorBrewer",
     "grid",
     "gridExtra",
-    "jsonlite",
-    "httr"
+    "httr",
+    "jsonlite"
   ),
   bioc = c("limma", 
            "statmod")
@@ -534,13 +534,29 @@ aS.eQTL.table <- aS.eQTL.table %>%
   dplyr::filter(qtl_chromosome == "III",
                 dplyr::between(qtl_bp, 1800000, 2000000))
 
-# Get a list of selected gene names and copy paste the result in
-# https://wormbase.org/tools/mine/simplemine.cgi to generate an overview
-# of their functions
+# Get a list of selected gene names and 
 genes <- unique(aS.eQTL.table$gene_public_name)
 genes <- genes[!is.na(genes)]
 cat(genes, sep = "\n")
+# copy & paste the result in https://wormbase.org/tools/mine/simplemine.cgi to
+# generate an overview of their functions. Save resulting html file in ./output
 
 
+# Alternative: Use MyGene api to store gene name in var geneInfo:
+res <- POST(
+  "https://mygene.info/v3/query",
+  body = list(
+    q = genes,                 
+    scopes = "symbol",
+    fields = "symbol,name,summary",
+    species = "6239"
+  ),
+  encode = "json"
+)
 
+geneInfo <- fromJSON(content(res, "text", encoding = "UTF-8"))
+geneInfo
+
+geneResults <- data[, c("query", "name")]
+geneResults
 
