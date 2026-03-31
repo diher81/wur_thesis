@@ -532,6 +532,7 @@ f1d
 # see trans band (= eQTL hotspot)
 aS.eQTL.table <- aS.eQTL.table %>%
   dplyr::filter(qtl_chromosome == "III",
+                trans_band == "III:1.5-2Mb",
                 dplyr::between(qtl_bp, 1800000, 2000000))
 
 # Get a list of selected gene names and 
@@ -567,7 +568,7 @@ geneInfo
 load(file="./Output/obj_peak.aS.eQTL.Rdata")
 load(file="./Output/obj_aS.eQTL.Rdata")
 
-data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, "AGIWUR10711")
+data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, "AGIWUR12088")
 data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))    
 
 
@@ -606,11 +607,13 @@ f2f
 
 
 subset <- peak.aS.eQTL[
-  as.character(unlist(peak.aS.eQTL$trait)) == "AGIWUR5179", ]
+  as.character(unlist(peak.aS.eQTL$trait)) == "AGIWUR12088", ]
 
 subset$qtl_peak
 
 
 test <- agi.id %>%
-  dplyr::filter(gene_public_name == "snf-6")
-test
+  dplyr::filter(gene_public_name == "cnc-6")
+# OR
+test <- agi.id %>%
+  dplyr::filter(GeneName == "cnc-6")
