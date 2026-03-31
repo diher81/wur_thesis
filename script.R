@@ -556,7 +556,6 @@ res <- POST(
 
 geneInfo <- fromJSON(content(res, "text", encoding = "UTF-8"))
 geneInfo
-
-geneResults <- data[, c("query", "name")]
-geneResults
+geneInfo <- geneInfo[, c("query", "name")]
+geneInfo
 
