@@ -576,11 +576,18 @@ spotIds <- agi.id %>%
 spotIds
 
 
-for (i in seq_along(spotIds$SpotID)) {
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
+layout <- rbind(c(1,2),c(1,3),c(1,4))
+
+# Open pdf device
+pdf(file = paste(dirOutput, "boxplotsForGenes.pdf", sep = ""), width = 10, height = 14)
+
+id <- spotIds$SpotID
+for (i in seq_along(id)) {
 
   message(i)
   
-  data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, spotIds$SpotID[i])
+  data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, id[i])
   
   if (length(data.plot) < 2) {
     message("Skipping (no peak): ", id)
@@ -624,41 +631,33 @@ f2f <- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
                              digits=2),
                        sep=""),
            parse=TRUE)
+
+
+annotation.grobA <- title.grob <- textGrob(label = paste("f2e_", id[i], sep = ""),
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobB <- title.grob <- textGrob(label = paste("f2f_", id[i], sep = ""),
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+
+graph.oject.significance <- arrangeGrob(f2e, top = annotation.grobA)
+graph.oject.boxplot  <- arrangeGrob(f2f, top = annotation.grobB)
+
+# Draw to pdf
+grid.arrange(graph.oject.significance, 
+             graph.oject.boxplot,
+             blank.plot, 
+             layout_matrix = layout, 
+             heights = c(3,3,8))
+
+
 }
 
-
-
-
-blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
-layout <- rbind(c(1,2),c(1,3),c(1,4))
-
-annotation.grobA <- title.grob <- textGrob(label = "A",
-                                           x = unit(0, "lines"),
-                                           y = unit(0, "lines"),
-                                           hjust = 0, 
-                                           vjust = 0,
-                                           gp = gpar(fontsize = 20,fontface="bold"))
-annotation.grobB <- title.grob <- textGrob(label = "B",
-                                           x = unit(0, "lines"),
-                                           y = unit(0, "lines"),
-                                           hjust = 0, 
-                                           vjust = 0,
-                                           gp = gpar(fontsize = 20,fontface="bold"))
-annotation.grobC <- title.grob <- textGrob(label = "C",
-                                           x = unit(0, "lines"),
-                                           y = unit(0, "lines"),
-                                           hjust = 0, 
-                                           vjust = 0,
-                                           gp = gpar(fontsize = 20,fontface="bold"))
-
-graph.oject.gen.map <- arrangeGrob(figure_1_gen_map, top = annotation.grobA)
-graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
-graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
-
-# Open pdf device
-pdf(file = paste(dirOutput, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
-# Draw to pdf
-grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
-             blank.plot, layout_matrix = layout, heights = c(3,3,8))
 # Close pdf
 dev.off()
