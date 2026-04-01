@@ -106,6 +106,10 @@ population.markers <- read.table(
 IL_gen <- read.delim("./Data/Genetic_map/asIL_map_new.txt") 
 IL.map <- load(file = "./Data/Genetic_map/obj_IL_map.Rdata")
 
+# eQTL
+load(file="./Output/obj_peak.aS.eQTL.Rdata")
+load(file="./Output/obj_aS.eQTL.Rdata")
+
 
 # ------------------------------------------------------------------------------
 # Initial data inspection - OPTIONAL
@@ -565,20 +569,40 @@ geneInfo
 # Draw boxplots for genes of interest
 # ------------------------------------------------------------------------------
 
-load(file="./Output/obj_peak.aS.eQTL.Rdata")
-load(file="./Output/obj_aS.eQTL.Rdata")
+# Selected SpotId's
+spotIds <- agi.id %>%
+  dplyr::filter(agi.id$GeneName %in% c(geneInfo$query)) %>% # GeneName or gene_public_name??? Why sometimes more than 1 result?
+  dplyr::select(SpotID)
+spotIds
 
-data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, "AGIWUR12088")
-data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))    
+
+for (i in seq_along(spotIds$SpotID)) {
+
+  message(i)
+  
+  data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, spotIds$SpotID[i])
+  
+  if (length(data.plot) < 2) {
+    message("Skipping (no peak): ", id)
+    next
+  }
+  
+  data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))
+
+f2e <- ggplot(data.plot$QTL_profile, aes(x = qtl_bp,y = qtl_significance,alpha = 0.2)) +
+  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome,scales = "free",
+             space = "free_x") + 
+  presentation + 
+  theme(legend.position  =  "none") +
+  geom_abline(intercept = 4.3,slope = 0,linetype = 2,size = 1) + 
+  labs(x = "QTL position (Mb)",
+       y = expression(bold("significance"~(-log[10](p)))),
+       parse = TRUE) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
 
 
-f2e<- ggplot(data.plot$QTL_profile,aes(x=qtl_bp,y=qtl_significance,alpha=0.2)) +
-  geom_line(size=1.5,colour=brewer.pal(9,"Set1")[4]) + facet_grid(~qtl_chromosome,scales="free",space="free_x") + presentation + theme(legend.position = "none") +
-  geom_abline(intercept=4.3,slope=0,linetype=2,size=1) + labs(x="QTL position (Mb)",y=expression(bold("significance"~(-log[10](p)))),parse=TRUE) +
-  scale_x_continuous(breaks=c(0,10,20)*10^6,labels=c(0,10,20)) + ylim(0,5.5)
-f2e
-
-f2f<- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
+f2f <- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
   geom_jitter(height=0,
               width=0.25,
               aes(colour=geno_strain),
@@ -600,20 +624,41 @@ f2f<- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
                              digits=2),
                        sep=""),
            parse=TRUE)
-f2f
+}
 
 
 
 
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
+layout <- rbind(c(1,2),c(1,3),c(1,4))
 
-subset <- peak.aS.eQTL[
-  as.character(unlist(peak.aS.eQTL$trait)) == "AGIWUR12088", ]
+annotation.grobA <- title.grob <- textGrob(label = "A",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobB <- title.grob <- textGrob(label = "B",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
+annotation.grobC <- title.grob <- textGrob(label = "C",
+                                           x = unit(0, "lines"),
+                                           y = unit(0, "lines"),
+                                           hjust = 0, 
+                                           vjust = 0,
+                                           gp = gpar(fontsize = 20,fontface="bold"))
 
-subset$qtl_peak
+graph.oject.gen.map <- arrangeGrob(figure_1_gen_map, top = annotation.grobA)
+graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
+graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
-
-test <- agi.id %>%
-  dplyr::filter(gene_public_name == "cnc-6")
-# OR
-test <- agi.id %>%
-  dplyr::filter(GeneName == "cnc-6")
+# Open pdf device
+pdf(file = paste(dirOutput, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
+# Draw to pdf
+grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
+             blank.plot, layout_matrix = layout, heights = c(3,3,8))
+# Close pdf
+dev.off()
