@@ -1,19 +1,19 @@
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
-#    ___  ___ _____        _____ _               _     
-#    |  \/  |/  ___|      |_   _| |             (_)    
-#    | .  . |\ `--.  ___    | | | |__   ___  ___ _ ___ 
-#    | |\/| | `--. \/ __|   | | | '_ \ / _ \/ __| / __|
-#    | |  | |/\__/ / (__    | | | | | |  __/\__ \ \__ \
-#    \_|  |_/\____/ \___|   \_/ |_| |_|\___||___/_|___/
-#    ______ _       _       _                          
-#    | ___ (_)     | |     | |                         
-#    | |_/ /_  ___ | | ___ | | __ _ _   _              
-#    | ___ \ |/ _ \| |/ _ \| |/ _` | | | |             
-#    | |_/ / | (_) | | (_) | | (_| | |_| |             
-#    \____/|_|\___/|_|\___/|_|\__, |\__, |             
-#                              __/ | __/ |             
-#                             |___/ |___/                                       
+#      __  __  _____        _______ _               _     
+#     |  \/  |/ ____|      |__   __| |             (_)    
+#     | \  / | (___   ___     | |  | |__   ___  ___ _ ___ 
+#     | |\/| |\___ \ / __|    | |  | '_ \ / _ \/ __| / __|
+#     | |  | |____) | (__     | |  | | | |  __/\__ \ \__ \
+#     |_|  |_|_____/ \___|    |_|  |_| |_|\___||___/_|___/
+#      _ __  _       _                                    
+#     |  _ \(_)     | |                                   
+#     | |_) |_  ___ | | ___   __ _ _   _                  
+#     |  _ <| |/ _ \| |/ _ \ / _` | | | |                 
+#     | |_) | | (_) | | (_) | (_| | |_| |                 
+#     |____/|_|\___/|_|\___/ \__, |\__, |                 
+#                             __/ | __/ |                 
+#                            |___/ |___/                                       
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # Dirk Hermans
@@ -105,6 +105,9 @@ population.markers <- read.table(paste(dirData,
   "Genetic_map/asRIL_map_new.txt", sep = ""))[,c(1:3)]
 IL_gen <- read.delim(paste(dirData, "Genetic_map/asIL_map_new.txt", sep = "")) 
 IL.map <- load(file = paste(dirData, "Genetic_map/obj_IL_map.Rdata", sep = ""))
+
+#qQTL
+obj_name <- load(file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
 
 
 # ------------------------------------------------------------------------------
@@ -391,14 +394,16 @@ aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
 save(aS.eQTL, 
      file = paste(dirOutput, "/obj_aS.eQTL.Rdata", sep = ""))
 
-# Built eQTL list file with calculated threshold value 4.3
+# Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
-#!!! peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
-#!!!   QTL.peak.finder(threshold = 4.3)
-#!!! save(peak.aS.eQTL, 
-#!!!      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
-obj_name <- load(file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
-peak.aS.eQTL <- get(obj_name)
+# Existing obj_peak.aS.eQTL.Rdata file was loaded at the top of this script
+executeLongMethod = FALSE
+if(executeLongMethod){
+  peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
+    QTL.peak.finder(threshold = 4.3)
+  save(peak.aS.eQTL,
+       file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
+}
 
 # Create eQTL table
 aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL, 
@@ -462,17 +467,19 @@ table(aS.eQTL.table$trans_band)
 
 # Conduct mapping simulation to investigate power
 # +/- 35 min
-aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
-                               strain.marker = data.eQTL$Marker,
-                               threshold = 4.3,
-                               n_per_marker = 10)
-
-aS.simulation
-save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
-
-# Instead of generating: load previously generated aS.simulation here:
-load(file.path(dirOutput, "aS.simulation.RData"))
-
+executeLongMethod = FALSE
+if(executeLongMethod){
+  aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
+                                 strain.marker = data.eQTL$Marker,
+                                 threshold = 4.3,
+                                 n_per_marker = 10)
+  
+  aS.simulation
+  save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
+} else {
+  # Instead of generating: load previously generated aS.simulation here:
+  load(file.path(dirOutput, "aS.simulation.RData"))
+}
 
 # eQTL table (supplementary table 5)
 load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
@@ -528,12 +535,10 @@ f1d
 # Filter out genes of interest
 # ------------------------------------------------------------------------------
 
-# Filter out genes between 1,8M bp and 2M bp.
-# see trans band (= eQTL hotspot)
+# Filter out genes between 1M bp and 2.5M bp.
 aS.eQTL.table <- aS.eQTL.table %>%
   dplyr::filter(qtl_chromosome == "III",
-                trans_band == "III:1.5-2Mb",
-                dplyr::between(qtl_bp, 1800000, 2000000))
+                dplyr::between(qtl_bp, 1000000, 2500000))
 
 # Get a list of selected gene names and 
 genes <- unique(aS.eQTL.table$gene_public_name)
@@ -541,6 +546,8 @@ genes <- genes[!is.na(genes)]
 cat(genes, sep = "\n")
 # copy & paste the result in https://wormbase.org/tools/mine/simplemine.cgi to
 # generate an overview of their functions. Save resulting html file in ./output
+
+#!!!! bekijk concise description
 
 
 # Alternative: Use MyGene api to store gene name in var geneInfo:
@@ -566,15 +573,11 @@ geneInfo
 # ------------------------------------------------------------------------------
 
 # load eQTL files
-load(file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
 load(file = paste(dirOutput, "obj_aS.eQTL.Rdata", sep = ""))
 
 # Selected SpotId's
-spotIds <- agi.id %>%
-  dplyr::filter(agi.id$GeneName %in% c(geneInfo$query)) %>% # GeneName or gene_public_name??? Why sometimes more than 1 result?
-  dplyr::select(SpotID)
-spotIds
-
+spotIds <- aS.eQTL.table[[1]]
+geneNames <- aS.eQTL.table[[16]]
 
 blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 layout <- rbind(c(1,2),c(1,3),c(1,4))
@@ -582,18 +585,11 @@ layout <- rbind(c(1,2),c(1,3),c(1,4))
 # Open pdf device
 pdf(file = paste(dirOutput, "boxplotsForGenes.pdf", sep = ""), width = 10, height = 14)
 
-id <- spotIds$SpotID
-for (i in seq_along(id)) {
+for (i in seq_along(spotIds)) {
 
   message(i)
   
-  data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, id[i])
-  
-  if (length(data.plot) < 2) {
-    message("Skipping (no peak): ", id[i])
-    next
-  }
-  
+  data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, spotIds[i])
   data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))
 
   f2e <- ggplot(data.plot$QTL_profile, aes(x = qtl_bp,y = qtl_significance,alpha = 0.2)) +
@@ -602,21 +598,21 @@ for (i in seq_along(id)) {
                space = "free_x") + 
     presentation + 
     theme(legend.position  =  "none") +
-    geom_abline(intercept = 4.3,slope = 0,linetype = 2,size = 1) + 
+    geom_abline(intercept = 4.3, slope = 0, linetype = 2, size = 1) + 
     labs(x = "QTL position (Mb)",
          y = expression(bold("significance"~(-log[10](p)))),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
   
   
-  f2f <- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
+  f2f <- ggplot(data.plot[[2]], aes(x = geno_strain, y = trait_value)) +
     geom_jitter(height=0,
                 width=0.25,
                 aes(colour=geno_strain),
                 alpha=0.2) + 
     geom_boxplot(outlier.shape=NA, alpha=0.2, aes(fill=geno_strain)) +
-    labs(x="Genotype\nat marker", 
-         y=expression(bolditalic('snf-6')~bold("expression")),
+    labs(x = "Genotype\nat marker", 
+         y = paste(geneNames[i], " expression"),
          parse=TRUE) + 
     facet_grid(~Chromosome+Position) +
     presentation + 
@@ -632,19 +628,18 @@ for (i in seq_along(id)) {
                          sep=""),
              parse=TRUE)
   
-  
-  annotation.grobA <- title.grob <- textGrob(label = paste("f2e_", id[i], sep = ""),
+  annotation.grobA <- title.grob <- textGrob(label = paste("eQTL profile ", geneNames[i]),
                                              x = unit(0, "lines"),
                                              y = unit(0, "lines"),
                                              hjust = 0, 
                                              vjust = 0,
-                                             gp = gpar(fontsize = 20,fontface="bold"))
-  annotation.grobB <- title.grob <- textGrob(label = paste("f2f_", id[i], sep = ""),
+                                             gp = gpar(fontsize = 20, fontface="bold"))
+  annotation.grobB <- title.grob <- textGrob(label = paste("Genotype split-out ", geneNames[i], sep = ""),
                                              x = unit(0, "lines"),
                                              y = unit(0, "lines"),
                                              hjust = 0, 
                                              vjust = 0,
-                                             gp = gpar(fontsize = 20,fontface="bold"))
+                                             gp = gpar(fontsize = 20,fontface = "bold"))
   
   graph.oject.significance <- arrangeGrob(f2e, top = annotation.grobA)
   graph.oject.boxplot  <- arrangeGrob(f2f, top = annotation.grobB)
