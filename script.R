@@ -78,12 +78,12 @@ lapply(unlist(packages), library, character.only = TRUE)
 
 # Working directories
 dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
-dirData <- paste(dirHome, "data/", sep = "")
-dirDataMA <- paste(dirHome, "data/MA/", sep = "")
-dirFunctions <- paste(dirHome, "function_scripts/", sep = "")
-dirTarget <- paste(dirHome, "target/", sep = "")
-dirOutput <- paste(dirHome, "output/", sep = "")
-dirNormalized <- paste(dirHome, "normalized/", sep = "")
+dirData <- paste0(dirHome, "data/")
+dirDataMA <- paste0(dirHome, "data/MA/")
+dirFunctions <- paste0(dirHome, "function_scripts/")
+dirTarget <- paste0(dirHome, "target/")
+dirOutput <- paste0(dirHome, "output/")
+dirNormalized <- paste0(dirHome, "normalized/")
 
 setwd(dirHome)
 
@@ -93,21 +93,19 @@ setwd(dirHome)
 # ------------------------------------------------------------------------------
 
 # Targets
-targets_RIL <- read.delim(paste(dirTarget, "Targets_RIL.txt", sep = ""), 
-                          stringsAsFactors=FALSE)
-agi.id <- read.delim(paste(dirTarget, "ArrayID_agilentV2_WS258.txt", sep = ""), 
+targets_RIL <- read.delim(paste0(dirTarget, "Targets_RIL.txt"), 
+                          stringsAsFactors = FALSE)
+agi.id <- read.delim(paste0(dirTarget, "ArrayID_agilentV2_WS258.txt"), 
                      stringsAsFactors = FALSE)
 
 # load DNAseq map
-population.map <- data.matrix(read.table(paste(dirData, 
-  "Genetic_map/asRIL_map_new.txt", sep = ""))[,-c(1:3,5,6,8,9,11,13)])
-population.markers <- read.table(paste(dirData, 
-  "Genetic_map/asRIL_map_new.txt", sep = ""))[,c(1:3)]
-IL_gen <- read.delim(paste(dirData, "Genetic_map/asIL_map_new.txt", sep = "")) 
-IL.map <- load(file = paste(dirData, "Genetic_map/obj_IL_map.Rdata", sep = ""))
+population.map <- data.matrix(read.table(paste0(dirData, 
+  "Genetic_map/asRIL_map_new.txt"))[,-c(1:3,5,6,8,9,11,13)])
+population.markers <- read.table(paste0(dirData, 
+  "Genetic_map/asRIL_map_new.txt"))[,c(1:3)]
 
 #qQTL
-obj_name <- load(file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
+obj_name <- load(file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
 
 
 # ------------------------------------------------------------------------------
@@ -205,11 +203,11 @@ transcriptomics.check.genes(transformed.intensities,
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
 list.data.RIL <- transcriptomics.list.to.df(trans.int = transformed.intensities, 
-                                        spot.id=agi.id$SpotID,
+                                        spot.id = agi.id$SpotID,
                                         colnames.sep = ":", 
                                         colnames.names = colnames.names)
 save(list.data.RIL, 
-     file = paste(dirNormalized, "/obj_list.data.RIL.Rdata", sep = ""))
+     file = paste0(dirNormalized, "/obj_list.data.RIL.Rdata"))
 
 
 # ------------------------------------------------------------------------------
@@ -320,7 +318,7 @@ graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
 graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
 # Open pdf device
-pdf(file = paste(dirOutput, "figure1-Genetic_map.pdf", sep = ""), width = 10, height = 14)
+pdf(file = paste0(dirOutput, "figure1-Genetic_map.pdf"), width = 10, height = 14)
 # Draw to pdf
 grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
              blank.plot, layout_matrix = layout, heights = c(3,3,8))
@@ -392,7 +390,7 @@ lapply(data.eQTL, head)
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
 save(aS.eQTL, 
-     file = paste(dirOutput, "/obj_aS.eQTL.Rdata", sep = ""))
+     file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
 
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
@@ -402,7 +400,7 @@ if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
     QTL.peak.finder(threshold = 4.3)
   save(peak.aS.eQTL,
-       file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
+       file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
 }
 
 # Create eQTL table
@@ -438,8 +436,7 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
                                        merge_condition = 1)
 
 # Save
-save(aS.eQTL.table, 
-     file = paste(dirOutput, "obj_aS.eQTL.table.Rdata", sep = ""))         
+save(aS.eQTL.table, file = paste0(dirOutput, "obj_aS.eQTL.table.Rdata"))         
 
 ###Stats for text
 ###genes in TB
@@ -482,13 +479,13 @@ if(executeLongMethod){
 }
 
 # eQTL table (supplementary table 5)
-load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
+load(file = paste0(dirData, "QTL/obj_aS.eQTL.table.Rdata"))
 
 writexl::write_xlsx(aS.eQTL.table,
-                    path = paste(dirOutput, "Supplementary_table5-eQTL.xlsx", sep = ""))
+                    path = paste0(dirOutput, "Supplementary_table5-eQTL.xlsx"))
 
 # eQTL visualization (figure 1C & D) 
-load(file = paste(dirData, "QTL/obj_aS.eQTL.table.Rdata", sep = ""))
+load(file = paste0(dirData, "QTL/obj_aS.eQTL.table.Rdata"))
 
 plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
 
@@ -573,14 +570,14 @@ geneInfo
 # ------------------------------------------------------------------------------
 
 # load eQTL files
-load(file = paste(dirOutput, "obj_aS.eQTL.Rdata", sep = ""))
+load(file = paste0(dirOutput, "obj_aS.eQTL.Rdata"))
 
 # Selected SpotId's
 spotIds <- aS.eQTL.table[[1]]
 geneNames <- aS.eQTL.table[[16]]
 
 # Open pdf device
-pdf(file = paste(dirOutput, "boxplotsForGenes.pdf", sep = ""), width = 10, height = 14)
+pdf(file = paste0(dirOutput, "boxplotsForGenes.pdf"), width = 10, height = 14)
 
 # Create an aQTL profile and a boxplot for every selected gene
 for (i in seq_along(spotIds)) {
@@ -631,7 +628,7 @@ for (i in seq_along(spotIds)) {
                                              hjust = 0, 
                                              vjust = 0,
                                              gp = gpar(fontsize = 20, fontface="bold"))
-  annotation.grobB <- title.grob <- textGrob(label = paste("Genotype split-out ", geneNames[i], sep = ""),
+  annotation.grobB <- title.grob <- textGrob(label = paste0("Genotype split-out ", geneNames[i]),
                                              x = unit(0, "lines"),
                                              y = unit(0, "lines"),
                                              hjust = 0, 
