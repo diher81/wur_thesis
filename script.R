@@ -93,22 +93,18 @@ setwd(dirHome)
 # ------------------------------------------------------------------------------
 
 # Targets
-targets_RIL <- read.delim("./target/Targets_RIL.txt", 
+targets_RIL <- read.delim(paste(dirTarget, "Targets_RIL.txt", sep = ""), 
                           stringsAsFactors=FALSE)
-agi.id <- read.delim("./target/ArrayID_agilentV2_WS258.txt", 
+agi.id <- read.delim(paste(dirTarget, "ArrayID_agilentV2_WS258.txt", sep = ""), 
                      stringsAsFactors = FALSE)
 
 # load DNAseq map
-population.map <- data.matrix(read.table(
-  "./Data/Genetic_map/asRIL_map_new.txt")[,-c(1:3,5,6,8,9,11,13)])
-population.markers <- read.table(
-  "./Data/Genetic_map/asRIL_map_new.txt")[,c(1:3)]
-IL_gen <- read.delim("./Data/Genetic_map/asIL_map_new.txt") 
-IL.map <- load(file = "./Data/Genetic_map/obj_IL_map.Rdata")
-
-# eQTL
-load(file="./Output/obj_peak.aS.eQTL.Rdata")
-load(file="./Output/obj_aS.eQTL.Rdata")
+population.map <- data.matrix(read.table(paste(dirData, 
+  "Genetic_map/asRIL_map_new.txt", sep = ""))[,-c(1:3,5,6,8,9,11,13)])
+population.markers <- read.table(paste(dirData, 
+  "Genetic_map/asRIL_map_new.txt", sep = ""))[,c(1:3)]
+IL_gen <- read.delim(paste(dirData, "Genetic_map/asIL_map_new.txt", sep = "")) 
+IL.map <- load(file = paste(dirData, "Genetic_map/obj_IL_map.Rdata", sep = ""))
 
 
 # ------------------------------------------------------------------------------
@@ -397,10 +393,10 @@ save(aS.eQTL,
 
 # Built eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
-# peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
-#   QTL.peak.finder(threshold = 4.3)
-# save(peak.aS.eQTL, 
-#      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
+#!!! peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
+#!!!   QTL.peak.finder(threshold = 4.3)
+#!!! save(peak.aS.eQTL, 
+#!!!      file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
 obj_name <- load(file = paste(dirOutput, "/obj_peak.aS.eQTL.Rdata", sep = ""))
 peak.aS.eQTL <- get(obj_name)
 
@@ -569,6 +565,10 @@ geneInfo
 # Draw boxplots for genes of interest
 # ------------------------------------------------------------------------------
 
+# load eQTL files
+load(file = paste(dirOutput, "obj_peak.aS.eQTL.Rdata", sep = ""))
+load(file = paste(dirOutput, "obj_aS.eQTL.Rdata", sep = ""))
+
 # Selected SpotId's
 spotIds <- agi.id %>%
   dplyr::filter(agi.id$GeneName %in% c(geneInfo$query)) %>% # GeneName or gene_public_name??? Why sometimes more than 1 result?
@@ -590,73 +590,71 @@ for (i in seq_along(id)) {
   data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, id[i])
   
   if (length(data.plot) < 2) {
-    message("Skipping (no peak): ", id)
+    message("Skipping (no peak): ", id[i])
     next
   }
   
   data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))
 
-f2e <- ggplot(data.plot$QTL_profile, aes(x = qtl_bp,y = qtl_significance,alpha = 0.2)) +
-  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
-  facet_grid(~qtl_chromosome,scales = "free",
-             space = "free_x") + 
-  presentation + 
-  theme(legend.position  =  "none") +
-  geom_abline(intercept = 4.3,slope = 0,linetype = 2,size = 1) + 
-  labs(x = "QTL position (Mb)",
-       y = expression(bold("significance"~(-log[10](p)))),
-       parse = TRUE) +
-  scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
-
-
-f2f <- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
-  geom_jitter(height=0,
-              width=0.25,
-              aes(colour=geno_strain),
-              alpha=0.2) + 
-  geom_boxplot(outlier.shape=NA, alpha=0.2, aes(fill=geno_strain)) +
-  labs(x="Genotype\nat marker", 
-       y=expression(bolditalic('snf-6')~bold("expression")),
-       parse=TRUE) + 
-  facet_grid(~Chromosome+Position) +
-  presentation + 
-  colScale + 
-  fillScale + 
-  theme(legend.position = "none") +
-  annotate("text",
-           x=1.5,
-           y=max(data.plot[[2]]$trait_value,na.rm=T),
-           label=paste("italic(R)^{2}==",
-                       round(data.plot[[2]]$R_squared[1],
-                             digits=2),
-                       sep=""),
-           parse=TRUE)
-
-
-annotation.grobA <- title.grob <- textGrob(label = paste("f2e_", id[i], sep = ""),
-                                           x = unit(0, "lines"),
-                                           y = unit(0, "lines"),
-                                           hjust = 0, 
-                                           vjust = 0,
-                                           gp = gpar(fontsize = 20,fontface="bold"))
-annotation.grobB <- title.grob <- textGrob(label = paste("f2f_", id[i], sep = ""),
-                                           x = unit(0, "lines"),
-                                           y = unit(0, "lines"),
-                                           hjust = 0, 
-                                           vjust = 0,
-                                           gp = gpar(fontsize = 20,fontface="bold"))
-
-graph.oject.significance <- arrangeGrob(f2e, top = annotation.grobA)
-graph.oject.boxplot  <- arrangeGrob(f2f, top = annotation.grobB)
-
-# Draw to pdf
-grid.arrange(graph.oject.significance, 
-             graph.oject.boxplot,
-             blank.plot, 
-             layout_matrix = layout, 
-             heights = c(3,3,8))
-
-
+  f2e <- ggplot(data.plot$QTL_profile, aes(x = qtl_bp,y = qtl_significance,alpha = 0.2)) +
+    geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
+    facet_grid(~qtl_chromosome,scales = "free",
+               space = "free_x") + 
+    presentation + 
+    theme(legend.position  =  "none") +
+    geom_abline(intercept = 4.3,slope = 0,linetype = 2,size = 1) + 
+    labs(x = "QTL position (Mb)",
+         y = expression(bold("significance"~(-log[10](p)))),
+         parse = TRUE) +
+    scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
+  
+  
+  f2f <- ggplot(data.plot[[2]], aes(x=geno_strain, y=trait_value)) +
+    geom_jitter(height=0,
+                width=0.25,
+                aes(colour=geno_strain),
+                alpha=0.2) + 
+    geom_boxplot(outlier.shape=NA, alpha=0.2, aes(fill=geno_strain)) +
+    labs(x="Genotype\nat marker", 
+         y=expression(bolditalic('snf-6')~bold("expression")),
+         parse=TRUE) + 
+    facet_grid(~Chromosome+Position) +
+    presentation + 
+    colScale + 
+    fillScale + 
+    theme(legend.position = "none") +
+    annotate("text",
+             x=1.5,
+             y=max(data.plot[[2]]$trait_value,na.rm=T),
+             label=paste("italic(R)^{2}==",
+                         round(data.plot[[2]]$R_squared[1],
+                               digits=2),
+                         sep=""),
+             parse=TRUE)
+  
+  
+  annotation.grobA <- title.grob <- textGrob(label = paste("f2e_", id[i], sep = ""),
+                                             x = unit(0, "lines"),
+                                             y = unit(0, "lines"),
+                                             hjust = 0, 
+                                             vjust = 0,
+                                             gp = gpar(fontsize = 20,fontface="bold"))
+  annotation.grobB <- title.grob <- textGrob(label = paste("f2f_", id[i], sep = ""),
+                                             x = unit(0, "lines"),
+                                             y = unit(0, "lines"),
+                                             hjust = 0, 
+                                             vjust = 0,
+                                             gp = gpar(fontsize = 20,fontface="bold"))
+  
+  graph.oject.significance <- arrangeGrob(f2e, top = annotation.grobA)
+  graph.oject.boxplot  <- arrangeGrob(f2f, top = annotation.grobB)
+  
+  # Draw to pdf
+  grid.arrange(graph.oject.significance, 
+               graph.oject.boxplot,
+               blank.plot, 
+               layout_matrix = layout, 
+               heights = c(3,3,8))
 }
 
 # Close pdf
