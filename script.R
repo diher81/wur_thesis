@@ -579,15 +579,12 @@ load(file = paste(dirOutput, "obj_aS.eQTL.Rdata", sep = ""))
 spotIds <- aS.eQTL.table[[1]]
 geneNames <- aS.eQTL.table[[16]]
 
-blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
-layout <- rbind(c(1,2),c(1,3),c(1,4))
-
 # Open pdf device
 pdf(file = paste(dirOutput, "boxplotsForGenes.pdf", sep = ""), width = 10, height = 14)
 
+# Create an aQTL profile and a boxplot for every selected gene
 for (i in seq_along(spotIds)) {
-
-  message(i)
+  message(paste(i, "of", length(spotIds)))
   
   data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, spotIds[i])
   data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))
@@ -641,15 +638,15 @@ for (i in seq_along(spotIds)) {
                                              vjust = 0,
                                              gp = gpar(fontsize = 20,fontface = "bold"))
   
-  graph.oject.significance <- arrangeGrob(f2e, top = annotation.grobA)
+  graph.oject.eQTLprofile <- arrangeGrob(f2e, top = annotation.grobA)
   graph.oject.boxplot  <- arrangeGrob(f2f, top = annotation.grobB)
   
   # Draw to pdf
-  grid.arrange(graph.oject.significance, 
+  grid.arrange(graph.oject.eQTLprofile, 
                graph.oject.boxplot,
-               blank.plot, 
-               layout_matrix = layout, 
-               heights = c(3,3,8))
+               layout_matrix = layout <- rbind(c(1, 2),c(NA, NA)),
+               heights = c(1, 2))
+  
 }
 
 # Close pdf
