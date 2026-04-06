@@ -27,7 +27,9 @@ normalize.agilent.transcriptomics <- function(targets,bg.method,nWA.method,nBA.m
 
                                 workwd <- getwd()
                                 setwd(array_dir)
-                              	     RG <<- read.maimages(targets$FileName, source="agilent",columns=list(G = "gMeanSignal",Gb = "gBGMedianSignal", R= "rMeanSignal", Rb = "rBGMedianSignal"))
+                              	     RG <<- read.maimages(targets$FileName, 
+                              	                          source="agilent",
+                              	                          columns=list(G = "gMeanSignal",Gb = "gBGMedianSignal", R= "rMeanSignal", Rb = "rBGMedianSignal"))
                                 setwd(save_dir)
                                 ###Remove bad arrays
                                 if(rem.bad){

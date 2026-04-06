@@ -99,9 +99,9 @@ agi.id <- read.delim(paste0(dirTarget, "ArrayID_agilentV2_WS258.txt"),
                      stringsAsFactors = FALSE)
 
 # load DNAseq map
-population.map <- data.matrix(read.table(paste0(dirData, 
+populationMap <- data.matrix(read.table(paste0(dirData, 
   "Genetic_map/asRIL_map_new.txt"))[,-c(1:3,5,6,8,9,11,13)])
-population.markers <- read.table(paste0(dirData, 
+populationMarkers <- read.table(paste0(dirData, 
   "Genetic_map/asRIL_map_new.txt"))[,c(1:3)]
 
 #qQTL
@@ -117,7 +117,7 @@ inspectData = FALSE
 if(inspectData){
     # Read raw micro-array data
     microArrayFileNames <- targets_RIL$FileName
-    
+
     # Read raw red/green intensities
     rawDataMicroArrays <- read.maimages(microArrayFileNames, source = "agilent")
     
@@ -216,11 +216,11 @@ save(list.data.RIL,
 
 # Figure 1: Genetic map --------------------------------------------------------
 
-genetic_map <- population.map;
+genetic_map <- populationMap;
 genetic_map[is.na(genetic_map)] <- 0
 
 # rewrite the genetic map to a dataframe plottable in ggplot
-data.plot <- prep.ggplot.genetic.map(genetic_map, population.markers) %>%
+data.plot <- prep.ggplot.genetic.map(genetic_map, populationMarkers) %>%
     dplyr::group_by(strain) %>%
     dplyr::mutate(genotype = ifelse(genotype == 1, "N2", 
                                     ifelse(genotype == -1, "CB4856", NA))) %>%
@@ -247,11 +247,11 @@ print(figure_1_gen_map)
 
 # Figure 2: centimorgan map-----------------------------------------------------
 
-strain.map <- population.map[,-c(1:4)]
+strain.map <- populationMap[,-c(1:4)]
 strain.map[strain.map==0] <- NA
 
 # Calculate genetic distance between markers
-data.plot <- genetic.distance(strain.map, population.markers)
+data.plot <- genetic.distance(strain.map, populationMarkers)
 
 figure_2_cm_map <- ggplot(data.plot, aes(x=position,y=cM)) +
   geom_line() + geom_rug() + facet_grid(~chromosome,space = "free_x", scales = "free_x") + 
@@ -263,7 +263,7 @@ print(figure_2_cm_map)
 
 # Figure 3: Genotype distribution ----------------------------------------------
 
-data.plot <- cbind(population.markers, population.map) %>%
+data.plot <- cbind(populationMarkers, populationMap) %>%
   pivot_longer(
     cols = -c(Name, Chromosome, Position),
     names_to = "strain",
@@ -331,9 +331,9 @@ dev.off()
 # ------------------------------------------------------------------------------
 
 # Figure 5: RILs used for eQTL mapping
-popmap_in <- population.map
+popmap_in <- populationMap
 popmap_in[is.na(popmap_in)] <- 0
-data.plot.RIL <- prep.ggplot.genetic.map(popmap_in, population.markers) %>%
+data.plot.RIL <- prep.ggplot.genetic.map(popmap_in, populationMarkers) %>%
   dplyr::filter(strain %in% list.data.RIL$strain, 
                 !strain %in% c("N2", "CB4856", "NL5901", "SCH4856")) %>%
   dplyr::mutate(index = as.numeric(as.factor(strain)),
@@ -383,8 +383,8 @@ data.eQTL <- data.matrix(data.eQTL)
 
 data.eQTL <- QTL.data.prep(data.eQTL, 
                            colnames(data.eQTL), 
-                           population.map, 
-                           population.markers)
+                           populationMap, 
+                           populationMarkers)
 lapply(data.eQTL, head)  
 
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
