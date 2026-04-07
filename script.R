@@ -104,9 +104,12 @@ populationMap <- data.matrix(read.table(paste0(dirData,
 populationMarkers <- read.table(paste0(dirData, 
   "Genetic_map/asRIL_map_new.txt"))[,c(1:3)]
 
-#qQTL
-obj_name <- load(file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
+# eQTL
+load(file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
 
+# Protein accumulation
+load(file = paste0(dirData, "proteinAccumulation/obj_elisa_aS.Rdata"))
+load(file = paste0(dirData, "proteinAccumulation/obj_qpcr_aS.Rdata"))
 
 # ------------------------------------------------------------------------------
 # Initial data inspection - OPTIONAL
@@ -622,3 +625,21 @@ for (i in seq_along(spotIds)) {
 
 # Close pdf
 dev.off()
+
+
+# ------------------------------------------------------------------------------
+# Protein accumulation
+# ------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
