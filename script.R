@@ -214,8 +214,7 @@ save(list.data.RIL,
 # Genetic map
 # ------------------------------------------------------------------------------
 
-# Figure 1: Genetic map --------------------------------------------------------
-
+# Figure 1: Genetic map
 genetic_map <- populationMap;
 genetic_map[is.na(genetic_map)] <- 0
 
@@ -244,9 +243,7 @@ figure_1_gen_map <- ggplot(data.plot, aes(xmin = start, xmax = end, ymin = index
   theme(strip.background = element_blank(), legend.position = "None", panel.spacing = unit(0,"lines"))
 print(figure_1_gen_map)
 
-
-# Figure 2: centimorgan map-----------------------------------------------------
-
+# Figure 2: centimorgan map
 strain.map <- populationMap[,-c(1:4)]
 strain.map[strain.map==0] <- NA
 
@@ -260,9 +257,7 @@ figure_2_cm_map <- ggplot(data.plot, aes(x=position,y=cM)) +
   scale_x_continuous(breaks=c(5,10,15,20)*10^6, labels = c(5,10,15,20))
 print(figure_2_cm_map)
 
-
-# Figure 3: Genotype distribution ----------------------------------------------
-
+# Figure 3: Genotype distribution
 data.plot <- cbind(populationMarkers, populationMap) %>%
   pivot_longer(
     cols = -c(Name, Chromosome, Position),
@@ -288,9 +283,7 @@ figure_3_gen_distr <- ggplot(data.plot, aes(x = Position, y = n, fill = genotype
                      labels = c(5,10,15,20)) + scale_y_continuous(expand = c(0,0)) + guides(fill = guide_legend(title = "Genotype"))
 print(figure_3_gen_distr)
 
-
-# Figure 4: Genetic map --------------------------------------------------------
-
+# Figure 4: Genetic map
 blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 layout <- rbind(c(1,2),c(1,3),c(1,4))
 
@@ -381,20 +374,22 @@ data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL
 
 data.eQTL <- data.matrix(data.eQTL)
 
+# Data preparation for QTL mapping
+# Returns a list with the entries Trait, Map, and Marker, where the Traits are aligned with the map
 data.eQTL <- QTL.data.prep(data.eQTL, 
                            colnames(data.eQTL), 
                            populationMap, 
                            populationMarkers)
 lapply(data.eQTL, head)  
 
+# function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
-save(aS.eQTL, 
-     file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
+save(aS.eQTL, file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
 
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
-# Existing obj_peak.aS.eQTL.Rdata file was loaded at the top of this script
+# Existing obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
 executeLongMethod = FALSE
 if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
@@ -426,8 +421,9 @@ call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table,
                                           chromosomes = "III",
                                           chromosome_size = 13783801)
 
-# This function finds the number of successes that corresponds to a certain percentile based on an average rate of success.
-# In other words, we can say as this function returns the value of the inverse Poisson cumulative density function
+# This function finds the number of successes that corresponds to a certain percentile 
+# based on an average rate of success. 
+# (The corresponding Poisson quantiles for a set of probabilities are obtained.)
 qpois(0.0001, 18.36, lower.tail = F)
 
 # Adds whether a QTL is located in a trans-band (or cis-enriched area)
@@ -439,16 +435,13 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
 save(aS.eQTL.table, file = paste0(dirOutput, "obj_aS.eQTL.table.Rdata"))         
 
 ###Stats for text
-###genes in TB
+###genes in transband
 sum(table(aS.eQTL.table$trans_band)) - table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band)) == "none"]
 
-# verhouding trans and cis eQTL
-1167/2406
-
-###number of TB
+###number of transband
 length(table(aS.eQTL.table$trans_band)) - 1
 
-###cis /trans
+###cis / trans
 table(aS.eQTL.table$qtl_type)
 
 ###total
@@ -478,18 +471,17 @@ if(executeLongMethod){
   load(file.path(dirOutput, "aS.simulation.RData"))
 }
 
-# eQTL table (supplementary table 5)
+# eQTL table (figure 6 & 7, supplementary table 5)
 load(file = paste0(dirData, "QTL/obj_aS.eQTL.table.Rdata"))
 
 writexl::write_xlsx(aS.eQTL.table,
                     path = paste0(dirOutput, "Supplementary_table5-eQTL.xlsx"))
 
-# eQTL visualization (figure 1C & D) 
-load(file = paste0(dirData, "QTL/obj_aS.eQTL.table.Rdata"))
-
+# Make a table with eQTL peaks for plotting.
+# This function adds points to faithfully indicate the chromosome boundaries (standard is C. elegans))
 plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
 
-f1c <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
+figure_6_positions <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   geom_segment(aes(x = qtl_bp_left,
                    y = gene_bp,
                    xend = qtl_bp_right,
@@ -504,28 +496,27 @@ f1c <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   theme(legend.position  =  "none") +
   labs(x = "eQTL peak position (Mb)",
        y = "Gene position (Mb)") + 
-  ggtitle("Figure 1c: positions") +
+  ggtitle("Figure 6: positions") +
   theme(panel.spacing = unit(0.1,"lines")) +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
   scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
 
-f1c
+figure_6_positions
 
 plot.data <- filter(aS.eQTL.table, qtl_type == "trans") %>%
   prep.ggplot.eQTL.table() 
 
-
-f1d <- ggplot(plot.data, aes(x = qtl_bp,fill = qtl_type)) +
+figure_7_eQTL_counts <- ggplot(plot.data, aes(x = qtl_bp,fill = qtl_type)) +
   geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty = 2,lwd = 1.2) +
   facet_grid(c("")~qtl_chromosome, space  =  "free",scales = "free") + presentation + 
   fillScale + theme(legend.position  =  "none",
                     panel.spacing = unit(0.1,"lines")) +
   labs(x = "eQTL peak position (Mb)", y = "eQTL counts") +
-  ggtitle("Figure 1d: eQTL") +
+  ggtitle("Figure 7: eQTL") +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6,
                      labels = c(5,10,15,20))
 
-f1d
+figure_7_eQTL_counts
 
 
 # ------------------------------------------------------------------------------
@@ -544,9 +535,6 @@ cat(genes, sep = "\n")
 # copy & paste the result in https://wormbase.org/tools/mine/simplemine.cgi to
 # generate an overview of their functions. Save resulting html file in ./output
 
-#!!!! bekijk concise description
-
-
 # Alternative: Use MyGene api to store gene name in var geneInfo:
 res <- POST(
   "https://mygene.info/v3/query",
@@ -560,7 +548,6 @@ res <- POST(
 )
 
 geneInfo <- fromJSON(content(res, "text", encoding = "UTF-8"))
-geneInfo
 geneInfo <- geneInfo[, c("query", "name")]
 geneInfo
 
