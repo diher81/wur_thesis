@@ -471,9 +471,6 @@ if(executeLongMethod){
   load(file.path(dirOutput, "aS.simulation.RData"))
 }
 
-# eQTL table (figure 6 & 7, supplementary table 5)
-load(file = paste0(dirData, "QTL/obj_aS.eQTL.table.Rdata"))
-
 writexl::write_xlsx(aS.eQTL.table,
                     path = paste0(dirOutput, "Supplementary_table5-eQTL.xlsx"))
 
@@ -555,9 +552,6 @@ geneInfo
 # ------------------------------------------------------------------------------
 # Draw eQTL profiles and boxplots for genes of interest
 # ------------------------------------------------------------------------------
-
-# load eQTL files
-load(file = paste0(dirOutput, "obj_aS.eQTL.Rdata"))
 
 # Gene names and spotIds of the selected genes
 spotIds <- aS.eQTL.table[[1]]
