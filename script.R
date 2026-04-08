@@ -631,7 +631,55 @@ dev.off()
 # Protein accumulation
 # ------------------------------------------------------------------------------
 
+# QTL mapping
+data.QTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
+  dplyr::select(Number, Strain, 'a-synConcentration_ng.ml') %>%
+  spread(key = Strain, value = 'a-synConcentration_ng.ml') %>%
+  tibble::column_to_rownames("Number")
 
+data.QTL <- data.matrix(data.QTL)
+
+# Data preparation for QTL mapping
+data.QTL <- QTL.data.prep(data.QTL,
+                          colnames(data.QTL),
+                          populationMap,
+                          populationMarkers)
+lapply(data.eQTL, head)  
+
+# function for single marker mapping
+# TODO I get this error: 
+# Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
+aS.QTL <- QTL.map.1(data.QTL[[1]], data.QTL[[2]], data.QTL[[3]])
+save(aS.QTL, file = paste0(dirOutput, "/obj_aS.QTL.Rdata"))
+
+# Build QTL list file with calculated threshold value 4.3 
+# TODO QUESTION: Which threshold to use I here??
+peak.aS.QTL <- QTL.map1.dataframe(map1.output = aS.QTL) %>%
+  QTL.peak.finder(threshold = 4.3)
+save(peak.aS.QTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
+
+# TODO QUESTION: Should I be using this "...eQTL..." method?
+aS.QTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.QTL, 
+                                cis.trans.window = "LOD.drop",
+                                trait.annotation = cbind(trait = agi.id[,1],
+                                                         dplyr::select(agi.id,
+                                                                       chromosome, 
+                                                                       gene_bp_start, 
+                                                                       gene_WBID, 
+                                                                       gene_sequence_name, 
+                                                                       gene_public_name))) %>%
+  QTL.table.addR2(aS.QTL) %>%
+  group_by(gene_public_name, qtl_chromosome) %>%
+  mutate(qtl_representative = ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
+  data.frame() %>%
+  filter(!is.na(gene_bp), qtl_representative == "yes") %>%
+  arrange(trait); head(aS.QTL.table)
+
+# Add transband
+call.transbands.file <- QTL.eQTL.call.TBs(aS.QTL.table, 
+                                          window = 0.5e6,
+                                          chromosomes = "III",
+                                          chromosome_size = 13783801)
 
 
 
