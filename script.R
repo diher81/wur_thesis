@@ -83,6 +83,7 @@ dirDataMA <- paste0(dirHome, "data/MA/")
 dirFunctions <- paste0(dirHome, "function_scripts/")
 dirTarget <- paste0(dirHome, "target/")
 dirOutput <- paste0(dirHome, "output/")
+dirOutputFdr <- paste0(dirHome, "output/FDR/")
 dirNormalized <- paste0(dirHome, "normalized/")
 
 setwd(dirHome)
@@ -631,35 +632,55 @@ dev.off()
 # Protein accumulation
 # ------------------------------------------------------------------------------
 
-# QTL mapping
-data.QTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
-  dplyr::select(Number, Strain, 'a-synConcentration_ng.ml') %>%
-  spread(key = Strain, value = 'a-synConcentration_ng.ml') %>%
+# eQTL mapping
+data.pQTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
+  dplyr::select(Number, Strain, Norm_NLSCH) %>%
+  spread(key = Strain, value = Norm_NLSCH) %>%
   tibble::column_to_rownames("Number")
 
-data.QTL <- data.matrix(data.QTL)
+data.pQTL <- data.matrix(data.pQTL)
 
 # Data preparation for QTL mapping
-data.QTL <- QTL.data.prep(data.QTL,
-                          colnames(data.QTL),
-                          populationMap,
-                          populationMarkers)
-lapply(data.eQTL, head)  
+data.pQTL <- QTL.data.prep(data.pQTL,
+                           colnames(data.pQTL),
+                           populationMap,
+                           populationMarkers)
+lapply(data.pQTL, head)  
 
 # function for single marker mapping
 # TODO I get this error: 
 # Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
-aS.QTL <- QTL.map.1(data.QTL[[1]], data.QTL[[2]], data.QTL[[3]])
-save(aS.QTL, file = paste0(dirOutput, "/obj_aS.QTL.Rdata"))
+aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
+save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
+
+# Calculate threshold
+# TODO same error here
+# Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
+for(i in 1:10){
+    aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]],1)
+    save(aS.pQTL.perm, file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", i, ".Rdata"))
+}
+
+# Load permuation files
+# TODO is this necessary?
+filenames.perm <- dir(dirOutputFdr)
+filenames.perm <- filenames.perm[grep(".perm",filenames.perm)]
+filenames.perm <- filenames.perm[grepl("aS.",filenames.perm)]
+
+aS.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
+                        filenames.perm = filenames.perm, 
+                        FDR_dir = dirOutputFdr,
+                        q.value =0.025); aS.FDR[[1]]
+save(aS.FDR, file = paste0(dirOutputFdr, "obj_RIL.aS.FDR.Rdata"))
 
 # Build QTL list file with calculated threshold value 4.3 
-# TODO QUESTION: Which threshold to use I here??
-peak.aS.QTL <- QTL.map1.dataframe(map1.output = aS.QTL) %>%
+# TODO QUESTION: Update in order to use calculated threshold value
+peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = 4.3)
-save(peak.aS.QTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
+save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
 # TODO QUESTION: Should I be using this "...eQTL..." method?
-aS.QTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.QTL, 
+aS.pQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.pQTL, 
                                 cis.trans.window = "LOD.drop",
                                 trait.annotation = cbind(trait = agi.id[,1],
                                                          dplyr::select(agi.id,
@@ -668,15 +689,15 @@ aS.QTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.QTL,
                                                                        gene_WBID, 
                                                                        gene_sequence_name, 
                                                                        gene_public_name))) %>%
-  QTL.table.addR2(aS.QTL) %>%
+  QTL.table.addR2(aS.pQTL) %>%
   group_by(gene_public_name, qtl_chromosome) %>%
   mutate(qtl_representative = ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
   data.frame() %>%
   filter(!is.na(gene_bp), qtl_representative == "yes") %>%
-  arrange(trait); head(aS.QTL.table)
+  arrange(trait); head(aS.pQTL.table)
 
 # Add transband
-call.transbands.file <- QTL.eQTL.call.TBs(aS.QTL.table, 
+call.transbands.file <- QTL.eQTL.call.TBs(aS.pQTL.table, 
                                           window = 0.5e6,
                                           chromosomes = "III",
                                           chromosome_size = 13783801)
