@@ -379,7 +379,8 @@ data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL
 data.eQTL <- data.matrix(data.eQTL)
 
 # Data preparation for QTL mapping
-# Returns a list with the entries Trait, Map, and Marker, where the Traits are aligned with the map
+# Returns a list with the entries Trait (log2 intensities), Map, and Marker, where the Traits are aligned with the map
+# AGIWURxxxx = SpotIDs
 data.eQTL <- QTL.data.prep(data.eQTL, 
                            colnames(data.eQTL), 
                            populationMap, 
@@ -388,8 +389,11 @@ lapply(data.eQTL, head)
 
 # function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
+# LOD score: Logarithm Of Odds. A statistical estimate of the relative probability
+# of a QTL at this locus.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
 save(aS.eQTL, file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
+str(aS.eQTL)
 
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
