@@ -449,25 +449,6 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
 save(aS.eQTL.table, file = paste0(dirOutput, "obj_aS.eQTL.table.Rdata"))         
 
 
-# BELANGRIJK Voor transband. Niet voor mij. Mag dus verwijderd worden.
-
-###Stats for text
-###genes in transband
-sum(table(aS.eQTL.table$trans_band)) - table(aS.eQTL.table$trans_band)[names(table(aS.eQTL.table$trans_band)) == "none"]
-
-###number of transband
-length(table(aS.eQTL.table$trans_band)) - 1
-
-###cis / trans
-table(aS.eQTL.table$qtl_type)
-
-###total
-length(unique(aS.eQTL.table$gene_WBID))
-
-###TBs on chromosome III
-table(aS.eQTL.table$trans_band)
-
-
 # ------------------------------------------------------------------------------
 # power analysis (R only step)
 # ------------------------------------------------------------------------------
@@ -691,39 +672,3 @@ save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
 # Klaar. Figuur plotten van piek peak.aS.pQTL
 # call peak en plot
-
-# TODO QUESTION: Should I be using this "...eQTL..." method?
-# niet nodig
-aS.pQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.pQTL, 
-                                cis.trans.window = "LOD.drop",
-                                trait.annotation = cbind(trait = agi.id[,1],
-                                                         dplyr::select(agi.id,
-                                                                       chromosome, 
-                                                                       gene_bp_start, 
-                                                                       gene_WBID, 
-                                                                       gene_sequence_name, 
-                                                                       gene_public_name))) %>%
-  QTL.table.addR2(aS.pQTL) %>%
-  group_by(gene_public_name, qtl_chromosome) %>%
-  mutate(qtl_representative = ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
-  data.frame() %>%
-  filter(!is.na(gene_bp), qtl_representative == "yes") %>%
-  arrange(trait); head(aS.pQTL.table)
-
-# Add transband
-# niet meer
-call.transbands.file <- QTL.eQTL.call.TBs(aS.pQTL.table, 
-                                          window = 0.5e6,
-                                          chromosomes = "III",
-                                          chromosome_size = 13783801)
-
-
-
-
-
-
-
-
-
-
-
