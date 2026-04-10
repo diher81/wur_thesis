@@ -632,7 +632,7 @@ data.pQTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
   spread(key = Strain, value = Norm_NLSCH)
 
 data.pQTL <- data.matrix(data.pQTL)
-   rownames(data.pQTL) <- "elisa"
+rownames(data.pQTL) <- "elisa"
 
 # Data preparation for QTL mapping
 data.pQTL <- QTL.data.prep(data.pQTL,
@@ -642,27 +642,49 @@ data.pQTL <- QTL.data.prep(data.pQTL,
 lapply(data.pQTL, head)  
 
 # function for single marker mapping
-# TODO I get this error: 
-# Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
 aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
 save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
 
-# Calculate threshold
-# TODO same error here
-# Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
 
-# berekening om de theshold te kunnen berekenen
-aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]], 1000) # hier 1000 permutaties
+
+# use this code instead
+elis.QTL.perm <- QTL.map.1.perm(data.QTL[[1]],data.QTL[[2]],data.QTL[[3]],1000)
+save(elis.QTL.perm,file=paste("./elisa/obj_elis.QTL.perm.Rdata",sep=""))
+
+elis.FDR <- QTL.map.1.FDR(map1.output = elis.QTL,
+                          filenames.perm = "obj_elis.QTL.perm.Rdata", 
+                          FDR_dir = "./elisa/",
+                          q.value = 0.025,
+                          small = FALSE)
+elis.FDR[[1]]
+setwd(paste(workwd,"/elisa/",sep=""))
+save(elis.FDR,file="obj_RIL.elis.FDR.Rdata")
+setwd(workwd) ####3.1
+
+
+
+
+# Instead of this:
+
+# Calculate aS.pQTL.perm in order to be able to calculate threshold. 1000 permutations
+aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]], 1000) 
 save(aS.pQTL.perm,
-     file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", i, ".Rdata"))
+     file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", ".Rdata"))
+load(paste0(dirOutputFdr, "obj_aS.pQTL.perm", ".Rdata"))
 
 # hier de berekende value invullen die ik opgeslagen had. Zie mail Mark (ROND DE 3)
+# Opnieuw te laden?? Lijkt gewoon te lukken
 # deze berekent de threshold
 aS.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
-                        filenames.perm = filenames.perm, 
+                        filenames.perm = aS.pQTL.perm, 
                         FDR_dir = dirOutputFdr,
-                        q.value =0.025); aS.FDR[[1]]
+                        q.value = 0.025); aS.FDR[[1]]
 save(aS.FDR, file = paste0(dirOutputFdr, "obj_RIL.aS.FDR.Rdata"))
+
+
+
+
+
 
 # Build QTL list file with calculated threshold value 4.3 
 # TODO QUESTION: Update in order to use calculated threshold value
@@ -672,3 +694,14 @@ save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
 # Klaar. Figuur plotten van piek peak.aS.pQTL
 # call peak en plot
+
+
+
+
+# ------------------------------------------------------------------------------
+# Lifespan
+# ------------------------------------------------------------------------------
+
+# Mark will send data
+
+
