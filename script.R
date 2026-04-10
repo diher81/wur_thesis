@@ -398,6 +398,8 @@ str(aS.eQTL)
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
 # Existing obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
+# Genetisch kaart niet onafhankelijk want linkage, Dus ik weet niet hoeveel onafhankelijke testen er zijn
+# hoe groot is de kans dat ik deze piek vind op basis van random data (toevallig dus)
 executeLongMethod = FALSE
 if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
@@ -407,6 +409,10 @@ if(executeLongMethod){
 }
 
 # Create eQTL table
+# lod drop is natte vinger werk
+# niet enkel de piek, maar de hele regio moet boven de top van de piek min 1,5 liggen
+# breedte van die regio is afhank van linkage en grootte van populatie
+# veel recombinaties belangrijk voor het opbreken van de linkage
 aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL, 
                                 cis.trans.window = "LOD.drop",
                                 trait.annotation = cbind(trait = agi.id[,1],
@@ -441,6 +447,9 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
 
 # Save
 save(aS.eQTL.table, file = paste0(dirOutput, "obj_aS.eQTL.table.Rdata"))         
+
+
+# BELANGRIJK Voor transband. Niet voor mij. Mag dus verwijderd worden.
 
 ###Stats for text
 ###genes in transband
@@ -638,11 +647,11 @@ dev.off()
 
 # eQTL mapping
 data.pQTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
-  dplyr::select(Number, Strain, Norm_NLSCH) %>%
-  spread(key = Strain, value = Norm_NLSCH) %>%
-  tibble::column_to_rownames("Number")
+  dplyr::select(Strain, Norm_NLSCH) %>%
+  spread(key = Strain, value = Norm_NLSCH)
 
 data.pQTL <- data.matrix(data.pQTL)
+   rownames(data.pQTL) <- "elisa"
 
 # Data preparation for QTL mapping
 data.pQTL <- QTL.data.prep(data.pQTL,
@@ -660,17 +669,14 @@ save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
 # Calculate threshold
 # TODO same error here
 # Error in cor.test.default(data.input[i, !is.na(variable)], variable[!is.na(variable)],  : not enough finite observations
-for(i in 1:10){
-    aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]],1)
-    save(aS.pQTL.perm, file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", i, ".Rdata"))
-}
 
-# Load permuation files
-# TODO is this necessary?
-filenames.perm <- dir(dirOutputFdr)
-filenames.perm <- filenames.perm[grep(".perm",filenames.perm)]
-filenames.perm <- filenames.perm[grepl("aS.",filenames.perm)]
+# berekening om de theshold te kunnen berekenen
+aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]], 1000) # hier 1000 permutaties
+save(aS.pQTL.perm,
+     file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", i, ".Rdata"))
 
+# hier de berekende value invullen die ik opgeslagen had. Zie mail Mark (ROND DE 3)
+# deze berekent de threshold
 aS.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
                         filenames.perm = filenames.perm, 
                         FDR_dir = dirOutputFdr,
@@ -683,7 +689,11 @@ peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = 4.3)
 save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
+# Klaar. Figuur plotten van piek peak.aS.pQTL
+# call peak en plot
+
 # TODO QUESTION: Should I be using this "...eQTL..." method?
+# niet nodig
 aS.pQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.pQTL, 
                                 cis.trans.window = "LOD.drop",
                                 trait.annotation = cbind(trait = agi.id[,1],
@@ -701,6 +711,7 @@ aS.pQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.pQTL,
   arrange(trait); head(aS.pQTL.table)
 
 # Add transband
+# niet meer
 call.transbands.file <- QTL.eQTL.call.TBs(aS.pQTL.table, 
                                           window = 0.5e6,
                                           chromosomes = "III",
