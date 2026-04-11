@@ -105,9 +105,6 @@ populationMap <- data.matrix(read.table(paste0(dirData,
 populationMarkers <- read.table(paste0(dirData, 
   "Genetic_map/asRIL_map_new.txt"))[,c(1:3)]
 
-# eQTL
-load(file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
-
 # Protein accumulation
 load(file = paste0(dirData, "proteinAccumulation/obj_elisa_aS.Rdata"))
 load(file = paste0(dirData, "proteinAccumulation/obj_qpcr_aS.Rdata"))
@@ -403,14 +400,15 @@ str(aS.eQTL)
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
 # Previously generated obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
-# Genetisch kaart niet onafhankelijk want linkage, Dus ik weet niet hoeveel onafhankelijke testen er zijn
-# hoe groot is de kans dat ik deze piek vind op basis van random data (toevallig dus)
 executeLongMethod = FALSE
 if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
     QTL.peak.finder(threshold = 4.3)
   save(peak.aS.eQTL,
        file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
+} else {
+  # Instead of generating: load previously generated peak.aS.eQTL file here:
+  load(file.path(dirOutput, "obj_peak.aS.eQTL.Rdata"))
 }
 
 # Create eQTL table
@@ -467,7 +465,7 @@ if(executeLongMethod){
   aS.simulation
   save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
 } else {
-  # Instead of generating: load previously generated aS.simulation here:
+  # Instead of generating: load previously generated aS.simulation file here:
   load(file.path(dirOutput, "aS.simulation.RData"))
 }
 
