@@ -238,12 +238,18 @@ strain_index <- data.plot$strain
 names(strain_index) <- data.plot$index + 0.5    
 
 figure_1_gen_map <- ggplot(data.plot, aes(xmin = start, xmax = end, ymin = index, ymax = index + 1, fill = gt)) +
-  geom_rect() + scale_fill_manual(values = c("#0080FF","#FF8000",NA)) +
+  geom_rect() + 
+  scale_fill_manual(values = c("#0080FF","#FF8000",NA)) +
   facet_grid(.~chrom, scales="free", space="free") +
-  presentation + xlab("Chromosome position (Mb)") + ylab("Strain") +
+  presentation + 
+  lab("Chromosome position (Mb)") + ylab("Strain") +
   ggtitle("Figure 1: Genetic map") +
   scale_x_continuous(labels = function(x) { x/1e6 }, expand = c(0,0)) +
-  scale_y_continuous(breaks = unique(data.plot$index) + 0.5, labels = function(x) { strain_index[as.character(x)] }, expand = c(0,0)) +
+  scale_y_continuous(breaks = unique(data.plot$index) + 0.5, 
+                     labels = function(x) {
+                       strain_index[as.character(x)] 
+                     }, 
+                     expand = c(0,0)) +
   theme(strip.background = element_blank(), legend.position = "None", panel.spacing = unit(0,"lines"))
 print(figure_1_gen_map)
 
@@ -379,7 +385,8 @@ data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL
 data.eQTL <- data.matrix(data.eQTL)
 
 # Data preparation for QTL mapping
-# Returns a list with the entries Trait (log2 intensities), Map, and Marker, where the Traits are aligned with the map
+# Returns a list with the entries Trait (log2 intensities), Map, and Marker, 
+# where the Traits are aligned with the map
 # AGIWURxxxx = SpotIDs
 data.eQTL <- QTL.data.prep(data.eQTL, 
                            colnames(data.eQTL), 
@@ -389,15 +396,13 @@ lapply(data.eQTL, head)
 
 # function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
-# LOD score: Logarithm Of Odds. A statistical estimate of the relative probability
-# of a QTL at this locus.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
 save(aS.eQTL, file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
 str(aS.eQTL)
 
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
-# Existing obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
+# Previously generated obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
 # Genetisch kaart niet onafhankelijk want linkage, Dus ik weet niet hoeveel onafhankelijke testen er zijn
 # hoe groot is de kans dat ik deze piek vind op basis van random data (toevallig dus)
 executeLongMethod = FALSE
@@ -409,19 +414,16 @@ if(executeLongMethod){
 }
 
 # Create eQTL table
-# lod drop is natte vinger werk
-# niet enkel de piek, maar de hele regio moet boven de top van de piek min 1,5 liggen
-# breedte van die regio is afhank van linkage en grootte van populatie
-# veel recombinaties belangrijk voor het opbreken van de linkage
-aS.eQTL.table <- QTL.eQTL.table(QTL.peak.dataframe = peak.aS.eQTL, 
-                                cis.trans.window = "LOD.drop",
-                                trait.annotation = cbind(trait = agi.id[,1],
-                                                         dplyr::select(agi.id,
-                                                                       chromosome, 
-                                                                       gene_bp_start, 
-                                                                       gene_WBID, 
-                                                                       gene_sequence_name, 
-                                                                       gene_public_name))) %>%
+aS.eQTL.table <- QTL.eQTL.table(
+  QTL.peak.dataframe = peak.aS.eQTL,
+  cis.trans.window = "LOD.drop",
+  trait.annotation = cbind(trait = agi.id[,1],
+                           dplyr::select(agi.id,
+                                        chromosome, 
+                                        gene_bp_start, 
+                                        gene_WBID, 
+                                        gene_sequence_name, 
+                                        gene_public_name))) %>%
   QTL.table.addR2(aS.eQTL) %>%
   group_by(gene_public_name,qtl_chromosome) %>%
   mutate(qtl_representative=ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
@@ -440,7 +442,7 @@ call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table,
 # (The corresponding Poisson quantiles for a set of probabilities are obtained.)
 qpois(0.0001, 18.36, lower.tail = F)
 
-# Adds whether a QTL is located in a trans-band (or cis-enriched area)
+# For every QTL on chromosome III, indicate whether it is located in a trans-band or cis-enriched area
 aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
                                        call.transbands.file,
                                        merge_condition = 1)
@@ -491,7 +493,7 @@ figure_6_positions <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   theme(legend.position  =  "none") +
   labs(x = "eQTL peak position (Mb)",
        y = "Gene position (Mb)") + 
-  ggtitle("Figure 6: positions") +
+  ggtitle("Figure 6: eQTL locations") +
   theme(panel.spacing = unit(0.1,"lines")) +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
   scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
@@ -579,11 +581,11 @@ for (i in seq_along(spotIds)) {
     scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
   
   plotBoxplot <- ggplot(data.plot[[2]], aes(x = geno_strain, y = trait_value)) +
-    geom_jitter(height=0,
-                width=0.25,
-                aes(colour=geno_strain),
-                alpha=0.2) + 
-    geom_boxplot(outlier.shape=NA, alpha=0.2, aes(fill=geno_strain)) +
+    geom_jitter(height = 0,
+                width = 0.25,
+                aes(colour = geno_strain),
+                alpha = 0.2) + 
+    geom_boxplot(outlier.shape = NA, alpha = 0.2, aes(fill = geno_strain)) +
     labs(x = "Genotype at marker", 
          y = paste(geneNames[i], " expression"),
          parse=TRUE) + 

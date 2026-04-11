@@ -9,13 +9,13 @@
 #sigma_error (standard deviation of noise; standard normal)
 
 ###output
-#a dataframe with per rows the outcomes of the simulated peak-sizes. The number of true, false, and undetected
+#a data frame with per rows the outcomes of the simulated peak-sizes. The number of true, false, and undetected
 #  QTL; quantiles of the QTL effect-size estimation; quantiles of the QTL location estimation
 
 ###Description
 # Noise based on standard normal
 # Fractional genotypes are transformed to integer numbers using round for simulating QTL
-# Heterozygousity may be simulated using '0' or NA; these are ignored in assigning QTL effects but instead are given
+# Heterogeneity may be simulated using '0' or NA; these are ignored in assigning QTL effects but instead are given
 #  an effect based on a uniform distribution.
 
 ###Updates
