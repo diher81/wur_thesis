@@ -81,6 +81,7 @@ dirTarget <- paste0(dirHome, "data/target/")
 dirOutput <- paste0(dirHome, "output/")
 dirOutputFdr <- paste0(dirHome, "output/FDR/")
 dirNormalized <- paste0(dirHome, "output/normalized/")
+dirOutputElisa <- paste0(dirHome, "output/elisa/")
 
 setwd(dirHome)
 
@@ -610,7 +611,7 @@ dev.off()
 # Protein accumulation
 # ------------------------------------------------------------------------------
 
-# eQTL mapping
+# pQTL mapping
 data.pQTL <- filter(elis_data, !Strain %in% c("SCH4856", "NL5901")) %>%
   dplyr::select(Strain, Norm_NLSCH) %>%
   spread(key = Strain, value = Norm_NLSCH)
@@ -632,13 +633,12 @@ save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
 # to be fixed
 # use this code...
 elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
-save(elisa.QTL.perm, file = paste("./elisa/obj_elisa.QTL.perm.Rdata", sep=""))
+save(elisa.QTL.perm, file = paste0(dirOutputElisa, "obj_elisa.QTL.perm.Rdata"))
 
-elisa.FDR <- QTL.map.1.FDR(map1.output = elis.QTL,
-                            filenames.perm = "obj_elisa.QTL.perm.Rdata", 
-                            FDR_dir = "./elisa/",
-                            q.value = 0.025,
-                            small = FALSE)
+elisa.FDR <- QTL.map.1.FDR(map1.output = elisa.QTL.perm,
+                           filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
+                           q.value = 0.025,
+                           small = FALSE)
 elis.FDR[[1]]
 setwd(paste(workwd,"/elisa/",sep=""))
 save(elis.FDR,file="obj_RIL.elis.FDR.Rdata")
