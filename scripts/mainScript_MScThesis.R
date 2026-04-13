@@ -630,32 +630,27 @@ lapply(data.pQTL, head)
 aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
 save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
 
-# to be fixed
+# Permutation for single marker mapping
 elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
 save(elisa.QTL.perm, file = paste0(dirOutputElisa, "obj_elisa.QTL.perm.Rdata"))
 
+# FDR calculation for single marker mapping
 elisa.FDR <- QTL.map.1.FDR(map1.output = elisa.QTL.perm,
                            filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
                            q.value = 0.025,
                            small = FALSE)
-# TODO appears to be <NA>
-elisa.FDR[[1]]
+elisa.FDR[[1]] # TODO To Fix? Appears to be <NA>
 save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
 
-# TODO QUESTION: Update in order to use calculated threshold value
+# TODO QUESTION: Update in order to use calculated threshold value (if any)?
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = 3.1)
 save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
-# Klaar. Figuur plotten van piek peak.aS.pQTL
-# call peak en plot
-# Quick Manhattan plot
-ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_effect)) +
-  geom_line(size = 0.3) 
-
+# Plot peak.aS.pQTL
 plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_effect, alpha = 0.2)) +
   geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
-  facet_grid(~qtl_chromosome,scales = "free",
+  facet_grid(~qtl_chromosome, scales = "free",
              space = "free_x") + 
   presentation + 
   theme(legend.position = "none",
