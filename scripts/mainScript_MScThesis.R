@@ -463,7 +463,7 @@ writexl::write_xlsx(aS.eQTL.table,
 # This function adds points to faithfully indicate the chromosome boundaries (standard is C. elegans))
 plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
 
-figure_6_positions <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
+figure_6_locations <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   geom_segment(aes(x = qtl_bp_left,
                    y = gene_bp,
                    xend = qtl_bp_right,
@@ -483,7 +483,7 @@ figure_6_positions <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
   scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
 
-figure_6_positions
+figure_6_locations
 
 plot.data <- filter(aS.eQTL.table, qtl_type == "trans") %>%
   prep.ggplot.eQTL.table() 
@@ -631,7 +631,6 @@ aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
 save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
 
 # to be fixed
-# use this code...
 elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
 save(elisa.QTL.perm, file = paste0(dirOutputElisa, "obj_elisa.QTL.perm.Rdata"))
 
@@ -639,46 +638,35 @@ elisa.FDR <- QTL.map.1.FDR(map1.output = elisa.QTL.perm,
                            filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
                            q.value = 0.025,
                            small = FALSE)
-elis.FDR[[1]]
-setwd(paste(workwd,"/elisa/",sep=""))
-save(elis.FDR,file="obj_RIL.elis.FDR.Rdata")
-setwd(workwd) ####3.1
+# TODO appears to be <NA>
+elisa.FDR[[1]]
+save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
 
-
-
-
-# ...Instead of this:
-
-# Calculate aS.pQTL.perm in order to be able to calculate threshold. 1000 permutations
-aS.pQTL.perm <- QTL.map.1.perm(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]], 1000) 
-save(aS.pQTL.perm,
-     file = paste0(dirOutputFdr, "obj_aS.pQTL.perm", ".Rdata"))
-load(paste0(dirOutputFdr, "obj_aS.pQTL.perm", ".Rdata"))
-
-# hier de berekende value invullen die ik opgeslagen had. Zie mail Mark (ROND DE 3)
-# Opnieuw te laden?? Lijkt gewoon te lukken
-# deze berekent de threshold
-aS.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
-                        filenames.perm = aS.pQTL.perm, 
-                        FDR_dir = dirOutputFdr,
-                        q.value = 0.025); aS.FDR[[1]]
-save(aS.FDR, file = paste0(dirOutputFdr, "obj_RIL.aS.FDR.Rdata"))
-
-
-
-
-
-
-# Build QTL list file with calculated threshold value 4.3 
 # TODO QUESTION: Update in order to use calculated threshold value
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
-  QTL.peak.finder(threshold = 4.3)
+  QTL.peak.finder(threshold = 3.1)
 save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
 # Klaar. Figuur plotten van piek peak.aS.pQTL
 # call peak en plot
+# Quick Manhattan plot
+ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_effect)) +
+  geom_line(size = 0.3) 
 
-
+plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_effect, alpha = 0.2)) +
+  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome,scales = "free",
+             space = "free_x") + 
+  presentation + 
+  theme(legend.position = "none",
+        plot.margin = margin(10, 30, 10, 30)) +
+  geom_abline(intercept = 3.1, slope = 0, linetype = 2, size = 1) + 
+  labs(x = "QTL position (Mb)",
+       y = expression(bold("QTL effect")),
+       parse = TRUE) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5) +
+  ggtitle("Figure 8: pQTL mapping")
+print(plotPqtlProfile)
 
 
 # ------------------------------------------------------------------------------
