@@ -31,7 +31,7 @@
 # 1. Download, unzip and add following 43 .txt files to ./data/E-MTAB-11658/
 #     https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-11658
 #
-
+set.seed(123)
 
 # ------------------------------------------------------------------------------
 # General info
@@ -648,7 +648,7 @@ peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
 save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
 
 # Plot peak.aS.pQTL
-plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_effect, alpha = 0.2)) +
+plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
   geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
   facet_grid(~qtl_chromosome, scales = "free",
              space = "free_x") + 
