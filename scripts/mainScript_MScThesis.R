@@ -83,6 +83,7 @@ dirOutputFdr <- paste0(dirHome, "output/FDR/")
 dirNormalized <- paste0(dirHome, "output/normalized/")
 dirOutputElisa <- paste0(dirHome, "output/elisa/")
 dirOutputQpcr <- paste0(dirHome, "output/qpcr/")
+dirOutputEqtl <- paste0(dirHome, "output/eqtl/")
 
 setwd(dirHome)
 
@@ -382,7 +383,7 @@ lapply(data.eQTL, head)
 # function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
-save(aS.eQTL, file = paste0(dirOutput, "/obj_aS.eQTL.Rdata"))
+save(aS.eQTL, file = paste0(dirOutputEqtl, "/obj_aS.eQTL.Rdata"))
 str(aS.eQTL)
 
 # Build eQTL list file with calculated threshold value 4.3
@@ -393,10 +394,10 @@ if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
     QTL.peak.finder(threshold = 4.3)
   save(peak.aS.eQTL,
-       file = paste0(dirOutput, "obj_peak.aS.eQTL.Rdata"))
+       file = paste0(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
 } else {
   # Instead of generating: load previously generated peak.aS.eQTL file here:
-  load(file.path(dirOutput, "obj_peak.aS.eQTL.Rdata"))
+  load(file.path(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
 }
 
 # Create eQTL table
@@ -434,7 +435,7 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
                                        merge_condition = 1)
 
 # Save
-save(aS.eQTL.table, file = paste0(dirOutput, "obj_aS.eQTL.table.Rdata"))         
+save(aS.eQTL.table, file = paste0(dirOutputElisa, "obj_aS.eQTL.table.Rdata"))         
 
 
 # ------------------------------------------------------------------------------
@@ -451,14 +452,14 @@ if(executeLongMethod){
                                  n_per_marker = 10)
   
   aS.simulation
-  save(aS.simulation, file = file.path(dirOutput, "aS.simulation.RData"))
+  save(aS.simulation, file = file.path(dirOutputEqtl, "aS.simulation.RData"))
 } else {
   # Instead of generating: load previously generated aS.simulation file here:
-  load(file.path(dirOutput, "aS.simulation.RData"))
+  load(file.path(dirOutputEqtl, "aS.simulation.RData"))
 }
 
 writexl::write_xlsx(aS.eQTL.table,
-                    path = paste0(dirOutput, "Supplementary_table5-eQTL.xlsx"))
+                    path = paste0(dirOutputEqtl, "Supplementary_table5-eQTL.xlsx"))
 
 # Make a table with eQTL peaks for plotting.
 # This function adds points to faithfully indicate the chromosome boundaries (standard is C. elegans))
