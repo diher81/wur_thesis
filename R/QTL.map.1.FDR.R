@@ -34,10 +34,18 @@ QTL.map.1.FDR <- function(map1.output,filenames.perm,FDR_dir,q.value,small){
                              if(length(filenames.perm) > 1){
                                  stop("needs one permutatation file, with n permutations")
                              }
-                             tmp <- load(file=paste(FDR_dir,filenames.perm,sep=""))
+                           
+                           obj_name <- load(file = paste(FDR_dir, filenames.perm, sep = ""))
+                           #<newLines>
+                           obj <- get(obj_name)
+                           tmp <- obj$Trait_perm
+                           #</newLines>
+
                              ###No NA's
-                             tmp <- get(tmp)[[1]]
-                             tmp[is.na(tmp)] <- 0.1
+                           #<deletedLine>
+                             #tmp <- get(tmp)[[1]]
+                           #</deletedLine>
+                           tmp[is.na(tmp)] <- 0.1
                              
                              ###no Non-traits
                              tmp <- tmp[rownames(tmp) != "",]

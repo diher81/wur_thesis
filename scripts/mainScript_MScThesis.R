@@ -635,14 +635,14 @@ elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
 save(elisa.QTL.perm, file = paste0(dirOutputElisa, "obj_elisa.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
-elisa.FDR <- QTL.map.1.FDR(map1.output = elisa.QTL.perm,
+elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
                            filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
                            q.value = 0.025,
-                           small = FALSE)
-elisa.FDR[[1]] # TODO To Fix? Appears to be <NA>
+                           small = TRUE)
+elisa.FDR[[1]] 
 save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
 
-# TODO QUESTION: Update in order to use calculated threshold value (if any)?
+# TODO QUESTION: Update in order to use calculated threshold value?
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = 3.1)
 save(peak.aS.pQTL, file = paste0(dirOutput, "obj_peak.aS.QTL.Rdata"))
