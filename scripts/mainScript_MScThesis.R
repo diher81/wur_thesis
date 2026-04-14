@@ -629,7 +629,7 @@ lapply(data.pQTL, head)
 
 # function for single marker mapping
 aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
-save(aS.pQTL, file = paste0(dirOutput, "/obj_aS.pQTL.Rdata"))
+save(aS.pQTL, file = paste0(dirOutputElisa, "/obj_aS.pQTL.Rdata"))
 
 # Permutation for single marker mapping
 elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
@@ -640,12 +640,12 @@ elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
                            filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
                            q.value = 0.025,
                            small = TRUE)
-elisa.FDR[[1]] 
+thresholdElisa <- elisa.FDR[[1]] / 10 # 3.21
 save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
 
 # TODO QUESTION: Update in order to use calculated threshold value?
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
-  QTL.peak.finder(threshold = 3.1)
+  QTL.peak.finder(threshold = thresholdElisa)
 save(peak.aS.pQTL, file = paste0(dirOutputElisa, "obj_peak.aS.QTL.Rdata"))
 
 # Plot peak.aS.pQTL
@@ -656,11 +656,11 @@ plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, al
   presentation + 
   theme(legend.position = "none",
         plot.margin = margin(10, 30, 10, 30)) +
-  geom_abline(intercept = 3.1, slope = 0, linetype = 2, size = 1) + 
+  geom_abline(intercept = thresholdElisa, slope = 0, linetype = 2, size = 1) + 
   labs(x = "QTL position (Mb)",
        y = expression(bold("QTL effect")),
        parse = TRUE) +
-  scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
   ggtitle("Figure 8: pQTL mapping")
 print(plotPqtlProfile)
 
@@ -697,12 +697,12 @@ qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
                            filenames.perm = "/output/qpcr/obj_qpcr.pQTL.perm.Rdata",
                            q.value = 0.025,
                            small = TRUE)
-qpcr.FDR[[1]] # 16.7
+thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
 save(qpcr.FDR, file = paste0(dirOutputQpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 # TODO QUESTION: Update in order to use calculated threshold value?
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
-  QTL.peak.finder(threshold = 3.1)
+  QTL.peak.finder(threshold = thresholdQpcr)
 save(peak.qpcr.pQTL, file = paste0(dirOutputQpcr, "obj_peak.qpcr.pQTL.Rdata"))
 
 # Plot peak.qpcr.pQTL
@@ -713,11 +713,11 @@ plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, 
   presentation + 
   theme(legend.position = "none",
         plot.margin = margin(10, 30, 10, 30)) +
-  geom_abline(intercept = 3.1, slope = 0, linetype = 2, size = 1) + 
+  geom_abline(intercept = thresholdQpcr, slope = 0, linetype = 2, size = 1) + 
   labs(x = "QTL position (Mb)",
        y = expression(bold("QTL effect")),
        parse = TRUE) +
-  scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
   ggtitle("Figure 9: QTL mapping for QPCR")
 print(plotQpcrProfile)
 
