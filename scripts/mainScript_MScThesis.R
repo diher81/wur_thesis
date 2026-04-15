@@ -31,6 +31,9 @@
 # 1. Download, unzip and add following 43 .txt files to ./data/E-MTAB-11658/
 #     https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-11658
 #
+# 2. In order not to run long methods, make sure these files are present in 
+#    ./data/QTL : aS.simulation.RData and obj_peak.aS.eQTL.Rdata
+
 set.seed(123)
 
 # ------------------------------------------------------------------------------
@@ -77,6 +80,7 @@ dirHome <- "/Users/diher/Repos/wur/thesis_dirk/"
 dirFunctions <- paste0(dirHome, "R/")
 dirData <- paste0(dirHome, "data/")
 dirDataMA <- paste0(dirHome, "data/MA/")
+dirDataQtl <- paste0(dirHome, "data/QTL/")
 dirTarget <- paste0(dirHome, "data/target/")
 dirOutput <- paste0(dirHome, "output/")
 dirOutputFdr <- paste0(dirHome, "output/FDR/")
@@ -401,7 +405,7 @@ if(executeLongMethod){
        file = paste0(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
 } else {
   # Instead of generating: load previously generated peak.aS.eQTL file here:
-  load(file.path(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
+  load(file.path(dirDataQtl, "obj_peak.aS.eQTL.Rdata"))
 }
 
 # Create eQTL table
@@ -459,7 +463,7 @@ if(executeLongMethod){
   save(aS.simulation, file = file.path(dirOutputEqtl, "aS.simulation.RData"))
 } else {
   # Instead of generating: load previously generated aS.simulation file here:
-  load(file.path(dirOutputEqtl, "aS.simulation.RData"))
+  load(file.path(dirDataQtl, "aS.simulation.RData"))
 }
 
 writexl::write_xlsx(aS.eQTL.table,
