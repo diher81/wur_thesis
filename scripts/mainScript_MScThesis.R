@@ -731,37 +731,35 @@ print(plotQpcrProfile)
 
 # QTL mapping
 data.QTL <- life_data_stats %>%
-  dplyr::filter(!Strain %in% c("N2", "CB4856", "SCH4856", "NL5901")) %>%
+  dplyr::filter(
+    !Strain %in% c("N2", "CB4856", "SCH4856", "NL5901"),
+    trait == "Lifespan_mean"
+  ) %>%
+  dplyr::select(Strain, Treatment, value) %>%
   tidyr::pivot_wider(
-    id_cols = c(Strain, Treatment),
-    names_from = trait,
+    id_cols = Treatment,
+    names_from = Strain,
     values_from = value
   )
 
 # Split data per treatment
-data_DR <- data.QTL %>%
-  dplyr::filter(Treatment == "DR") %>%
-  as.data.frame()
-rownames(data_DR) <- data_DR$Strain
-data_DR <- data_DR[, !(colnames(data_DR) %in% c("Strain", "Treatment"))]
-data_DR <- data.matrix(data_DR)
-data_DR <- t(data_DR)
+data_DR <- data.QTL %>% 
+  dplyr::filter(Treatment == "DR") %>% 
+  dplyr::select(-Treatment) 
+data_DR <- data.matrix(data_DR) 
+rownames(data_DR) <- "Lifespan_mean"
 
 data_NGM <- data.QTL %>%
   dplyr::filter(Treatment == "NGM") %>%
-  as.data.frame()
-rownames(data_NGM) <- data_NGM$Strain
-data_NGM <- data_NGM[, !(colnames(data_NGM) %in% c("Strain", "Treatment"))]
-data_NGM <- data.matrix(data_NGM)
-data_NGM <- t(data_NGM)
+  dplyr::select(-Treatment) 
+data_NGM <- data.matrix(data_NGM) 
+rownames(data_NGM) <- "Lifespan_mean"
 
 data_pl <- data.QTL %>%
   dplyr::filter(Treatment == "Plasticity") %>%
-  as.data.frame()
-rownames(data_pl) <- data_pl$Strain
-data_pl <- data_pl[, !(colnames(data_pl) %in% c("Strain", "Treatment"))]
-data_pl <- data.matrix(data_pl)
-data_pl <- t(data_pl)
+  dplyr::select(-Treatment) 
+data_pl <- data.matrix(data_pl) 
+rownames(data_pl) <- "Lifespan_mean"
 
 # Data preparation for QTL mapping
 data_DR <- QTL.data.prep(data_DR, colnames(data_DR), populationMap, populationMarkers)
@@ -789,7 +787,7 @@ dr.FDR <- QTL.map.1.FDR(map1.output = dr.QTL,
                           filenames.perm = "/output/lifespan/obj_dr.QTL.perm.Rdata",
                           q.value = 0.025,
                           small = TRUE)
-thresholdDr <- dr.FDR[[1]] / 10 # 4.05
+thresholdDr <- dr.FDR[[1]] / 10 # 2.5
 save(dr.FDR, file = paste0(dirOutputLifespan, "obj_RIL.DR.FDR.Rdata"))
 peak.dr.QTL <- QTL.map1.dataframe(map1.output = dr.QTL) %>%
   QTL.peak.finder(threshold = thresholdDr)
@@ -799,7 +797,7 @@ ngm.FDR <- QTL.map.1.FDR(map1.output = ngm.QTL,
                         filenames.perm = "/output/lifespan/obj_ngm.QTL.perm.Rdata",
                         q.value = 0.025,
                         small = TRUE)
-thresholdNgm <- ngm.FDR[[1]] / 10 # 4.07
+thresholdNgm <- ngm.FDR[[1]] / 10 # 3.84
 save(ngm.FDR, file = paste0(dirOutputLifespan, "obj_RIL.ngm.FDR.Rdata"))
 peak.ngm.QTL <- QTL.map1.dataframe(map1.output = ngm.QTL) %>%
   QTL.peak.finder(threshold = thresholdNgm)
@@ -809,7 +807,7 @@ pl.FDR <- QTL.map.1.FDR(map1.output = pl.QTL,
                         filenames.perm = "/output/lifespan/obj_pl.QTL.perm.Rdata",
                         q.value = 0.025,
                         small = TRUE)
-thresholdPl <- pl.FDR[[1]] / 10 # 3.61
+thresholdPl <- pl.FDR[[1]] / 10 # 2.66
 save(pl.FDR, file = paste0(dirOutputLifespan, "obj_RIL.pl.FDR.Rdata"))
 peak.pl.QTL <- QTL.map1.dataframe(map1.output = pl.QTL) %>%
   QTL.peak.finder(threshold = thresholdPl)
