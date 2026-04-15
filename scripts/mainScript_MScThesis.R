@@ -84,6 +84,7 @@ dirNormalized <- paste0(dirHome, "output/normalized/")
 dirOutputElisa <- paste0(dirHome, "output/elisa/")
 dirOutputQpcr <- paste0(dirHome, "output/qpcr/")
 dirOutputEqtl <- paste0(dirHome, "output/eqtl/")
+dirOutputLifespan <- paste0(dirHome, "output/lifespan/")
 
 setwd(dirHome)
 
@@ -107,6 +108,9 @@ populationMarkers <- read.table(paste0(dirData,
 # Protein accumulation
 load(file = paste0(dirData, "proteinAccumulation/obj_elisa_aS.Rdata"))
 load(file = paste0(dirData, "proteinAccumulation/obj_qpcr_aS.Rdata"))
+
+# Lifespan
+load(file = paste0(dirData, "lifespan/obj_life_data_stats.Rdata"))
 
 # ------------------------------------------------------------------------------
 # Initial data inspection - OPTIONAL
@@ -307,7 +311,7 @@ graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
 graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
 # Open pdf device
-pdf(file = paste0(dirOutput, "figure1-Genetic_map.pdf"), width = 10, height = 14)
+pdf(file = paste0(dirOutput, "figure4-Genetic_map.pdf"), width = 10, height = 14)
 # Draw to pdf
 grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
              blank.plot, layout_matrix = layout, heights = c(3,3,8))
@@ -644,14 +648,13 @@ elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
 thresholdElisa <- elisa.FDR[[1]] / 10 # 3.21
 save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
 
-# TODO QUESTION: Update in order to use calculated threshold value?
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = thresholdElisa)
 save(peak.aS.pQTL, file = paste0(dirOutputElisa, "obj_peak.aS.QTL.Rdata"))
 
 # Plot peak.aS.pQTL
 plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
-  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
+  geom_line(size = 1.5, colour = brewer.pal(9,"Set1")[4]) + 
   facet_grid(~qtl_chromosome, scales = "free",
              space = "free_x") + 
   presentation + 
@@ -662,7 +665,7 @@ plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, al
        y = expression(bold("QTL effect")),
        parse = TRUE) +
   scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
-  ggtitle("Figure 8: pQTL mapping")
+  ggtitle("Figure 8: pQTL mapping - ELISA")
 print(plotPqtlProfile)
 
 
@@ -701,7 +704,6 @@ qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
 thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
 save(qpcr.FDR, file = paste0(dirOutputQpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
-# TODO QUESTION: Update in order to use calculated threshold value?
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
   QTL.peak.finder(threshold = thresholdQpcr)
 save(peak.qpcr.pQTL, file = paste0(dirOutputQpcr, "obj_peak.qpcr.pQTL.Rdata"))
@@ -719,7 +721,7 @@ plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, 
        y = expression(bold("QTL effect")),
        parse = TRUE) +
   scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
-  ggtitle("Figure 9: QTL mapping for QPCR")
+  ggtitle("Figure 9: QTL mapping for qPCR")
 print(plotQpcrProfile)
 
 
@@ -727,6 +729,79 @@ print(plotQpcrProfile)
 # Lifespan
 # ------------------------------------------------------------------------------
 
-# Mark will send data
+# QTL mapping
+data.QTL <- life_data_stats %>%
+  dplyr::filter(!Strain %in% c("N2", "CB4856", "SCH4856", "NL5901")) %>%
+  tidyr::pivot_wider(
+    id_cols = c(Strain, Treatment),
+    names_from = trait,
+    values_from = value
+  )
+
+# Split data per treatment
+data_DR <- data.QTL %>%
+  dplyr::filter(Treatment == "DR") %>%
+  as.data.frame()
+rownames(data_DR) <- data_DR$Strain
+data_DR <- data_DR[, !(colnames(data_DR) %in% c("Strain", "Treatment"))]
+data_DR <- data.matrix(data_DR)
+data_DR <- t(data_DR)
+
+data_NGM <- data.QTL %>%
+  dplyr::filter(Treatment == "NGM") %>%
+  as.data.frame()
+rownames(data_NGM) <- data_NGM$Strain
+data_NGM <- data_NGM[, !(colnames(data_NGM) %in% c("Strain", "Treatment"))]
+data_NGM <- data.matrix(data_NGM)
+data_NGM <- t(data_NGM)
+
+data_pl <- data.QTL %>%
+  dplyr::filter(Treatment == "Plasticity") %>%
+  as.data.frame()
+rownames(data_pl) <- data_pl$Strain
+data_pl <- data_pl[, !(colnames(data_pl) %in% c("Strain", "Treatment"))]
+data_pl <- data.matrix(data_pl)
+data_pl <- t(data_pl)
+
+# Data preparation for QTL mapping
+data_DR <- QTL.data.prep(data_DR, colnames(data_DR), populationMap, populationMarkers)
+data_NGM <- QTL.data.prep(data_NGM, colnames(data_NGM), populationMap, populationMarkers)
+data_pl <- QTL.data.prep(data_pl, colnames(data_pl), populationMap, populationMarkers)
+
+# function for single marker mapping
+qpcr.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
+save(qpcr.pQTL, file = paste0(dirOutputQpcr, "/obj_qpcr.pQTL.Rdata"))
+
+# Permutation for single marker mapping
+qpcr.QTL.perm <- QTL.map.1.perm(qpcr.pQTL[[1]], qpcr.pQTL[[2]], qpcr.pQTL[[3]], 1000)
+save(qpcr.QTL.perm, file = paste0(dirOutputQpcr, "obj_qpcr.pQTL.perm.Rdata"))
+
+# FDR calculation for single marker mapping
+qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
+                          filenames.perm = "/output/qpcr/obj_qpcr.pQTL.perm.Rdata",
+                          q.value = 0.025,
+                          small = TRUE)
+thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
+save(qpcr.FDR, file = paste0(dirOutputQpcr, "obj_RIL.qpcr.FDR.Rdata"))
+
+peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
+  QTL.peak.finder(threshold = thresholdQpcr)
+save(peak.qpcr.pQTL, file = paste0(dirOutputQpcr, "obj_peak.qpcr.pQTL.Rdata"))
+
+# Plot peak.qpcr.pQTL
+plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
+  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome, scales = "free",
+             space = "free_x") + 
+  presentation + 
+  theme(legend.position = "none",
+        plot.margin = margin(10, 30, 10, 30)) +
+  geom_abline(intercept = thresholdQpcr, slope = 0, linetype = 2, size = 1) + 
+  labs(x = "QTL position (Mb)",
+       y = expression(bold("QTL effect")),
+       parse = TRUE) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
+  ggtitle("Figure 9: QTL mapping for qPCR")
+print(plotQpcrProfile)
 
 
