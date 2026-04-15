@@ -662,7 +662,7 @@ plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, al
         plot.margin = margin(10, 30, 10, 30)) +
   geom_abline(intercept = thresholdElisa, slope = 0, linetype = 2, size = 1) + 
   labs(x = "QTL position (Mb)",
-       y = expression(bold("QTL effect")),
+       y = expression(bold("QTL significance")),
        parse = TRUE) +
   scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
   ggtitle("Figure 8: pQTL mapping - ELISA")
@@ -718,7 +718,7 @@ plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, 
         plot.margin = margin(10, 30, 10, 30)) +
   geom_abline(intercept = thresholdQpcr, slope = 0, linetype = 2, size = 1) + 
   labs(x = "QTL position (Mb)",
-       y = expression(bold("QTL effect")),
+       y = expression(bold("QTL significance")),
        parse = TRUE) +
   scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
   ggtitle("Figure 9: QTL mapping for qPCR")
@@ -769,39 +769,94 @@ data_NGM <- QTL.data.prep(data_NGM, colnames(data_NGM), populationMap, populatio
 data_pl <- QTL.data.prep(data_pl, colnames(data_pl), populationMap, populationMarkers)
 
 # function for single marker mapping
-qpcr.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
-save(qpcr.pQTL, file = paste0(dirOutputQpcr, "/obj_qpcr.pQTL.Rdata"))
+dr.QTL <- QTL.map.1(data_DR[[1]], data_DR[[2]], data_DR[[3]])
+save(dr.QTL, file = paste0(dirOutputLifespan, "/obj_dr.QTL.Rdata"))
+ngm.QTL <- QTL.map.1(data_NGM[[1]], data_NGM[[2]], data_NGM[[3]])
+save(ngm.QTL, file = paste0(dirOutputLifespan, "/obj_ngm.QTL.Rdata"))
+pl.QTL <- QTL.map.1(data_pl[[1]], data_pl[[2]], data_pl[[3]])
+save(pl.QTL, file = paste0(dirOutputLifespan, "/obj_pl.QTL.Rdata"))
 
 # Permutation for single marker mapping
-qpcr.QTL.perm <- QTL.map.1.perm(qpcr.pQTL[[1]], qpcr.pQTL[[2]], qpcr.pQTL[[3]], 1000)
-save(qpcr.QTL.perm, file = paste0(dirOutputQpcr, "obj_qpcr.pQTL.perm.Rdata"))
+dr.QTL.perm <- QTL.map.1.perm(dr.QTL[[1]], dr.QTL[[2]], dr.QTL[[3]], 1000)
+save(dr.QTL.perm, file = paste0(dirOutputLifespan, "obj_dr.QTL.perm.Rdata"))
+ngm.QTL.perm <- QTL.map.1.perm(ngm.QTL[[1]], ngm.QTL[[2]], ngm.QTL[[3]], 1000)
+save(ngm.QTL.perm, file = paste0(dirOutputLifespan, "obj_ngm.QTL.perm.Rdata"))
+pl.QTL.perm <- QTL.map.1.perm(pl.QTL[[1]], pl.QTL[[2]], pl.QTL[[3]], 1000)
+save(pl.QTL.perm, file = paste0(dirOutputLifespan, "obj_pl.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
-qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
-                          filenames.perm = "/output/qpcr/obj_qpcr.pQTL.perm.Rdata",
+dr.FDR <- QTL.map.1.FDR(map1.output = dr.QTL,
+                          filenames.perm = "/output/lifespan/obj_dr.QTL.perm.Rdata",
                           q.value = 0.025,
                           small = TRUE)
-thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
-save(qpcr.FDR, file = paste0(dirOutputQpcr, "obj_RIL.qpcr.FDR.Rdata"))
+thresholdDr <- dr.FDR[[1]] / 10 # 4.05
+save(dr.FDR, file = paste0(dirOutputLifespan, "obj_RIL.DR.FDR.Rdata"))
+peak.dr.QTL <- QTL.map1.dataframe(map1.output = dr.QTL) %>%
+  QTL.peak.finder(threshold = thresholdDr)
+save(peak.dr.QTL, file = paste0(dirOutputLifespan, "obj_peak.dr.QTL.Rdata"))
 
-peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
-  QTL.peak.finder(threshold = thresholdQpcr)
-save(peak.qpcr.pQTL, file = paste0(dirOutputQpcr, "obj_peak.qpcr.pQTL.Rdata"))
+ngm.FDR <- QTL.map.1.FDR(map1.output = ngm.QTL,
+                        filenames.perm = "/output/lifespan/obj_ngm.QTL.perm.Rdata",
+                        q.value = 0.025,
+                        small = TRUE)
+thresholdNgm <- ngm.FDR[[1]] / 10 # 4.07
+save(ngm.FDR, file = paste0(dirOutputLifespan, "obj_RIL.ngm.FDR.Rdata"))
+peak.ngm.QTL <- QTL.map1.dataframe(map1.output = ngm.QTL) %>%
+  QTL.peak.finder(threshold = thresholdNgm)
+save(peak.ngm.QTL, file = paste0(dirOutputLifespan, "obj_peak.ngm.QTL.Rdata"))
 
-# Plot peak.qpcr.pQTL
-plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
-  geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
-  facet_grid(~qtl_chromosome, scales = "free",
-             space = "free_x") + 
+pl.FDR <- QTL.map.1.FDR(map1.output = pl.QTL,
+                        filenames.perm = "/output/lifespan/obj_pl.QTL.perm.Rdata",
+                        q.value = 0.025,
+                        small = TRUE)
+thresholdPl <- pl.FDR[[1]] / 10 # 3.61
+save(pl.FDR, file = paste0(dirOutputLifespan, "obj_RIL.pl.FDR.Rdata"))
+peak.pl.QTL <- QTL.map1.dataframe(map1.output = pl.QTL) %>%
+  QTL.peak.finder(threshold = thresholdPl)
+save(peak.pl.QTL, file = paste0(dirOutputLifespan, "obj_peak.pl.QTL.Rdata"))
+
+# Plot peak.dr.pQTL
+plotLifespanDr <- ggplot(peak.dr.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
+  geom_line(size = 1.5, colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome, scales = "free", space = "free_x") + 
   presentation + 
   theme(legend.position = "none",
         plot.margin = margin(10, 30, 10, 30)) +
-  geom_abline(intercept = thresholdQpcr, slope = 0, linetype = 2, size = 1) + 
+  geom_abline(intercept = thresholdDr, slope = 0, linetype = 2, size = 1) + 
   labs(x = "QTL position (Mb)",
-       y = expression(bold("QTL effect")),
+       y = expression(bold("QTL significance")),
        parse = TRUE) +
   scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
-  ggtitle("Figure 9: QTL mapping for qPCR")
-print(plotQpcrProfile)
+  ggtitle("Figure 10: QTL mapping for Lifespan - DR")
+print(plotLifespanDr)
 
+# Plot peak.ngm.pQTL
+plotLifespanNgm <- ggplot(peak.ngm.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
+  geom_line(size = 1.5, colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome, scales = "free", space = "free_x") + 
+  presentation + 
+  theme(legend.position = "none",
+        plot.margin = margin(10, 30, 10, 30)) +
+  geom_abline(intercept = thresholdNgm, slope = 0, linetype = 2, size = 1) + 
+  labs(x = "QTL position (Mb)",
+       y = expression(bold("QTL significance")),
+       parse = TRUE) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
+  ggtitle("Figure 11: QTL mapping for Lifespan - NGM")
+print(plotLifespanNgm)
+
+# Plot peak.pl.pQTL
+plotLifespanPl <- ggplot(peak.pl.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
+  geom_line(size = 1.5, colour = brewer.pal(9,"Set1")[4]) + 
+  facet_grid(~qtl_chromosome, scales = "free", space = "free_x") + 
+  presentation + 
+  theme(legend.position = "none",
+        plot.margin = margin(10, 30, 10, 30)) +
+  geom_abline(intercept = thresholdPl, slope = 0, linetype = 2, size = 1) + 
+  labs(x = "QTL position (Mb)",
+       y = expression(bold("QTL significance")),
+       parse = TRUE) +
+  scale_x_continuous(breaks = c(0,10,20)*10^6, labels = c(0,10,20)) + ylim(0,5.5) +
+  ggtitle("Figure 12: QTL mapping for Lifespan - Plasticity")
+print(plotLifespanPl)
 
