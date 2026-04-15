@@ -29,12 +29,41 @@
 # ------------------------------------------------------------------------------
 
 # 1. Download, unzip and add following 43 .txt files to ./data/E-MTAB-11658/
-#     https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-11658
+#       https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-11658
 #
-# 2. In order not to run long methods, make sure these files are present in 
-#    ./data/QTL : aS.simulation.RData and obj_peak.aS.eQTL.Rdata
+# 2. Place following files in ./data/target/ : 
+#       "Targets_RIL.txt" and "ArrayID_agilentV2_WS258.txt"
+#
+# 3. Place following files in ./data/Genetic_map/ : 
+#       "asRIL_map_new.txt" and "asRIL_map_new.txt"
+#
+# 4. Place following files in ./data/proteinAccumulation/ : 
+#       "obj_elisa_aS.Rdata" and "obj_qpcr_aS.Rdata"
+#
+# 5. Place following files in ./data/lifespan/ : 
+#       "obj_life_data_stats.Rdata"
+#
+# 6. Place following files in ./data/QTL/ :
+#      "aS.simulation.RData" and "obj_peak.aS.eQTL.Rdata"
+#      (unless you want to calculate them again using time-consuming method calls.)
+#
+# 7. Prepare following folder structure:    ./
+#                                             |_data/
+#                                                 |_E-MTAB-11658/
+#                                                 |_Genetic_map/
+#                                                 |_lifespan/
+#                                                 |_MA/
+#                                                 |_proteinAccumulation/
+#                                                 |_QTL/
+#                                                 |_target/
+#                                             |_output/
+#                                                 |_elisa/
+#                                                 |_eqtl/
+#                                                 |_FDR/
+#                                                 |_lifespan/
+#                                                 |_normalized/
+#                                                 |_qpcr/
 
-set.seed(123)
 
 # ------------------------------------------------------------------------------
 # General info
@@ -116,6 +145,7 @@ load(file = paste0(dirData, "proteinAccumulation/obj_qpcr_aS.Rdata"))
 # Lifespan
 load(file = paste0(dirData, "lifespan/obj_life_data_stats.Rdata"))
 
+
 # ------------------------------------------------------------------------------
 # Initial data inspection - OPTIONAL
 # ------------------------------------------------------------------------------
@@ -177,6 +207,7 @@ myColors <- c(brewer.pal(9,"Set1")[c(2,5)],
               rep(brewer.pal(12,"Paired")[c(8,2,7,1)], times = 3))
 fillScale <- scale_fill_manual(name = "Treatment", values = myColors)
 colScale <- scale_colour_manual(name = "Treatment", values = myColors)
+
 
 # ------------------------------------------------------------------------------
 # Data normalization
@@ -396,13 +427,12 @@ str(aS.eQTL)
 
 # Build eQTL list file with calculated threshold value 4.3
 # These lines are not executable on workstations due to memory limits
-# Previously generated obj_peak.aS.eQTL.Rdata file was loaded at the start of this script
 executeLongMethod = FALSE
 if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
     QTL.peak.finder(threshold = 4.3)
-  save(peak.aS.eQTL,
-       file = paste0(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
+  save(peak.aS.eQTL, file = paste0(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
+  load(file.path(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
 } else {
   # Instead of generating: load previously generated peak.aS.eQTL file here:
   load(file.path(dirDataQtl, "obj_peak.aS.eQTL.Rdata"))
@@ -461,6 +491,7 @@ if(executeLongMethod){
   
   aS.simulation
   save(aS.simulation, file = file.path(dirOutputEqtl, "aS.simulation.RData"))
+  load(file.path(dirOutputEqtl, "aS.simulation.RData"))
 } else {
   # Instead of generating: load previously generated aS.simulation file here:
   load(file.path(dirDataQtl, "aS.simulation.RData"))
