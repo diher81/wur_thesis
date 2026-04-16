@@ -45,24 +45,8 @@
 #
 # 6. Place following files in ./data/QTL/ :
 #      "aS.simulation.RData" and "obj_peak.aS.eQTL.Rdata"
-#      (unless you want to calculate them again using time-consuming method calls.)
-#
-# 7. Prepare following folder structure:    ./
-#                                             |_data/
-#                                                 |_E-MTAB-11658/
-#                                                 |_Genetic_map/
-#                                                 |_lifespan/
-#                                                 |_proteinAccumulation/
-#                                                 |_QTL/
-#                                                 |_target/
-#                                             |_output/
-#                                                 |_elisa/
-#                                                 |_eqtl/
-#                                                 |_MA/
-#                                                 |_FDR/
-#                                                 |_lifespan/
-#                                                 |_normalized/
-#                                                 |_qpcr/
+#      (unless you want to calculate them again using time-consuming 
+#       method calls in this script.)
 
 
 # ------------------------------------------------------------------------------
@@ -87,7 +71,6 @@
 # Packages
 # ------------------------------------------------------------------------------
 
-# ---- Load packages ----
 library(tidyverse)
 library(RColorBrewer)
 library(gridExtra)
@@ -102,22 +85,6 @@ library(here)
 # ------------------------------------------------------------------------------
 # Set working directories
 # ------------------------------------------------------------------------------
-
-# dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
-# dirFunctions <- paste0(dirHome, "R/")
-# dirData <- paste0(dirHome, "data/")
-# dirDataMA <- paste0(dirHome, "data/MA/")
-# dirDataQtl <- paste0(dirHome, "data/QTL/")
-# dirTarget <- paste0(dirHome, "data/target/")
-# dirOutput <- paste0(dirHome, "output/")
-# dirOutputFdr <- paste0(dirHome, "output/FDR/")
-# dirNormalized <- paste0(dirHome, "output/normalized/")
-# dirOutputElisa <- paste0(dirHome, "output/elisa/")
-# dirOutputQpcr <- paste0(dirHome, "output/qpcr/")
-# dirOutputEqtl <- paste0(dirHome, "output/eqtl/")
-# dirOutputLifespan <- paste0(dirHome, "output/lifespan/")
-
-
 
 root <- here::here()
 paths <- list(
@@ -146,6 +113,27 @@ paths <- list(
 
 setwd(root)
 
+# ---- resolve full paths ----
+data_dirs <- file.path(root, unlist(paths$data, recursive = TRUE, use.names = FALSE))
+output_dirs <- file.path(root, unlist(paths$output, recursive = TRUE, use.names = FALSE))
+
+# ---- create data directories ----
+for (d in data_dirs) {
+  if (!dir.exists(d)) {
+    dir.create(d, recursive = TRUE)
+    message("Created data directory: ", d)
+  }
+}
+
+# ---- create output directories ----
+for (d in output_dirs) {
+  if (!dir.exists(d)) {
+    dir.create(d, recursive = TRUE)
+    message("Created output directory: ", d)
+  }
+}
+
+message("Project setup complete.")
 
 
 # ------------------------------------------------------------------------------
