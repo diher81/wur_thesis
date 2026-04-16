@@ -27,6 +27,6 @@ transcriptomics.check.genes <-
                     geom_boxplot(outlier.size = 0, aes(alpha=0.5)) + presentation +
                     theme(axis.text.x = element_text(angle = 90,vjust = 0.5))
 
-                if(filename==""){ggsave(filename=paste(save_dir,date.now(),"_genes.check.pdf",sep=""),width=3+length(unique(checkgenes$Sample))*0.25,height=15,limitsize=FALSE)}
-                if(filename!=""){ggsave(filename=paste(save_dir,date.now(),"_",filename,"_genes.check.pdf",sep=""),width=3+length(unique(checkgenes$Sample))*0.25,height=15,limitsize=FALSE)}
+                if(filename==""){ggsave(filename=paste(save_dir,"/",date.now(),"_genes.check.pdf",sep=""),width=3+length(unique(checkgenes$Sample))*0.25,height=15,limitsize=FALSE)}
+                if(filename!=""){ggsave(filename=paste(save_dir,"/",date.now(),"_",filename,"_genes.check.pdf",sep=""),width=3+length(unique(checkgenes$Sample))*0.25,height=15,limitsize=FALSE)}
                }

@@ -52,13 +52,13 @@
 #                                                 |_E-MTAB-11658/
 #                                                 |_Genetic_map/
 #                                                 |_lifespan/
-#                                                 |_MA/
 #                                                 |_proteinAccumulation/
 #                                                 |_QTL/
 #                                                 |_target/
 #                                             |_output/
 #                                                 |_elisa/
 #                                                 |_eqtl/
+#                                                 |_MA/
 #                                                 |_FDR/
 #                                                 |_lifespan/
 #                                                 |_normalized/
@@ -91,59 +91,91 @@
 library(tidyverse)
 library(RColorBrewer)
 library(gridExtra)
+library(grid)
 library(httr)
 library(jsonlite)
 library(limma)
 library(statmod)
-
-# ---- Load my functions ----
-files <- list.files("R", pattern = "\\.R$", full.names = TRUE)
-invisible(lapply(files, source))
+library(here)
 
 
 # ------------------------------------------------------------------------------
 # Set working directories
 # ------------------------------------------------------------------------------
 
-dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
-dirFunctions <- paste0(dirHome, "R/")
-dirData <- paste0(dirHome, "data/")
-dirDataMA <- paste0(dirHome, "data/MA/")
-dirDataQtl <- paste0(dirHome, "data/QTL/")
-dirTarget <- paste0(dirHome, "data/target/")
-dirOutput <- paste0(dirHome, "output/")
-dirOutputFdr <- paste0(dirHome, "output/FDR/")
-dirNormalized <- paste0(dirHome, "output/normalized/")
-dirOutputElisa <- paste0(dirHome, "output/elisa/")
-dirOutputQpcr <- paste0(dirHome, "output/qpcr/")
-dirOutputEqtl <- paste0(dirHome, "output/eqtl/")
-dirOutputLifespan <- paste0(dirHome, "output/lifespan/")
+# dirHome <- "/Users/diher/Repos/wur/thesis_dirk/" 
+# dirFunctions <- paste0(dirHome, "R/")
+# dirData <- paste0(dirHome, "data/")
+# dirDataMA <- paste0(dirHome, "data/MA/")
+# dirDataQtl <- paste0(dirHome, "data/QTL/")
+# dirTarget <- paste0(dirHome, "data/target/")
+# dirOutput <- paste0(dirHome, "output/")
+# dirOutputFdr <- paste0(dirHome, "output/FDR/")
+# dirNormalized <- paste0(dirHome, "output/normalized/")
+# dirOutputElisa <- paste0(dirHome, "output/elisa/")
+# dirOutputQpcr <- paste0(dirHome, "output/qpcr/")
+# dirOutputEqtl <- paste0(dirHome, "output/eqtl/")
+# dirOutputLifespan <- paste0(dirHome, "output/lifespan/")
 
-setwd(dirHome)
+
+
+root <- here::here()
+paths <- list(
+  R = file.path("R"),
+  scripts = file.path("scripts"),
+  data = list(
+    arrays = file.path("data", "E-MTAB-11658"),
+    geneticMap = file.path("data", "Genetic_map"),
+    lifespan = file.path("data", "lifespan"),
+    protAcc = file.path("data", "proteinAccumulation"),
+    qtl = file.path("data", "QTL"),
+    target = file.path("data", "target")
+  ),
+  output = list(
+    elisa = file.path("output", "elisa"),
+    eqtl = file.path("output", "eqtl"),
+    fdr = file.path("output", "FDR"),
+    geneticMap = file.path("output", "Genetic_map"),
+    genes = file.path("output", "genes"),
+    ma = file.path("output", "MA"),
+    lifespan = file.path("output", "lifespan"),
+    normalized = file.path("output", "normalized"),
+    qpcr = file.path("output", "qpcr")
+  )
+)
+
+setwd(root)
+
 
 
 # ------------------------------------------------------------------------------
-# Loading data
+# Loading data and functions
 # ------------------------------------------------------------------------------
+
+# ---- Load my data ----
 
 # Targets
-targets_RIL <- read.delim(paste0(dirTarget, "Targets_RIL.txt"), 
+targets_RIL <- read.delim(file.path(paths$data$target, "Targets_RIL.txt"),
                           stringsAsFactors = FALSE)
-agi.id <- read.delim(paste0(dirTarget, "ArrayID_agilentV2_WS258.txt"), 
+agi.id <- read.delim(file.path(paths$data$target, "ArrayID_agilentV2_WS258.txt"), 
                      stringsAsFactors = FALSE)
 
 # load DNAseq map
-populationMap <- data.matrix(read.table(paste0(dirData, 
-  "Genetic_map/asRIL_map_new.txt"))[,-c(1:3,5,6,8,9,11,13)])
-populationMarkers <- read.table(paste0(dirData, 
-  "Genetic_map/asRIL_map_new.txt"))[,c(1:3)]
+populationMap <- data.matrix(read.table(
+  file.path(paths$data$geneticMap, "asRIL_map_new.txt"))[,-c(1:3,5,6,8,9,11,13)])
+populationMarkers <- read.table(
+  file.path(paths$data$geneticMap, "asRIL_map_new.txt"))[,c(1:3)]
 
 # Protein accumulation
-load(file = paste0(dirData, "proteinAccumulation/obj_elisa_aS.Rdata"))
-load(file = paste0(dirData, "proteinAccumulation/obj_qpcr_aS.Rdata"))
+load(file = file.path(paths$data$protAcc, "obj_elisa_aS.Rdata"))
+load(file = file.path(paths$data$protAcc, "obj_qpcr_aS.Rdata"))
 
 # Lifespan
-load(file = paste0(dirData, "lifespan/obj_life_data_stats.Rdata"))
+load(file = file.path(paths$data$lifespan, "obj_life_data_stats.Rdata"))
+
+# ---- Load my functions ----
+files <- list.files(paths$R, pattern = "\\.R$", full.names = TRUE)
+invisible(lapply(files, source))
 
 
 # ------------------------------------------------------------------------------
@@ -216,18 +248,19 @@ colScale <- scale_colour_manual(name = "Treatment", values = myColors)
 # Generate normalized data (matrix) and save the normalized data files
 # R = Red channel = Cy5
 # G = Green channel = Cy3
-rg.normalized.intensities <- normalize.agilent.transcriptomics(targets = targets_RIL,
-                save_dir = dirNormalized)
+rg.normalized.intensities <- normalize.agilent.transcriptomics(
+  targets = targets_RIL, save_dir = file.path(root, paths$output$normalized))
 
 # Generate a list with "log2.rat.mean", "log2.int", "standard_score"
-transformed.intensities <- transcriptomics.transform.norm(rg.normalized.intensities,
-                save_dir = dirDataMA)
+transformed.intensities <- transcriptomics.transform.norm(
+  rg.normalized.intensities, save_dir = file.path(root, paths$output$ma))
 
 # Checks
-correlsums <- transcriptomics.check.cor(transformed.intensities, save_dir = dirOutput)
+correlsums <- transcriptomics.check.cor(transformed.intensities, 
+                                        save_dir = file.path(root, paths$output$normalized))
 transcriptomics.check.genes(transformed.intensities,
                             spot.id = agi.id$gene_public_name,
-                            save_dir = dirDataMA)
+                            save_dir = file.path(root, paths$output$ma))
 
 # Make and save a list of log2 transformed intensities and log2 ratio means
 colnames.names <- c("number","strain","batch","alphasyn","days","sample_number")
@@ -236,7 +269,7 @@ list.data.RIL <- transcriptomics.list.to.df(trans.int = transformed.intensities,
                                         colnames.sep = ":", 
                                         colnames.names = colnames.names)
 save(list.data.RIL, 
-     file = paste0(dirNormalized, "/obj_list.data.RIL.Rdata"))
+     file = file.path(root, paths$output$normalized, "/obj_list.data.RIL.Rdata"))
 
 
 # ------------------------------------------------------------------------------
@@ -346,7 +379,7 @@ graph.oject.cm.map  <- arrangeGrob(figure_2_cm_map, top = annotation.grobB)
 graph.oject.gen.distr  <- arrangeGrob(figure_3_gen_distr, top = annotation.grobC)
 
 # Open pdf device
-pdf(file = paste0(dirOutput, "figure4-Genetic_map.pdf"), width = 10, height = 14)
+pdf(file = file.path(root, paths$output$geneticMap, "figure4-Genetic_map.pdf"), width = 10, height = 14)
 # Draw to pdf
 grid.arrange(graph.oject.gen.map, graph.oject.cm.map, graph.oject.gen.distr, 
              blank.plot, layout_matrix = layout, heights = c(3,3,8))
@@ -422,7 +455,7 @@ lapply(data.eQTL, head)
 # function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
 aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
-save(aS.eQTL, file = paste0(dirOutputEqtl, "/obj_aS.eQTL.Rdata"))
+save(aS.eQTL, file = file.path(root, paths$output$eqtl, "/obj_aS.eQTL.Rdata"))
 str(aS.eQTL)
 
 # Build eQTL list file with calculated threshold value 4.3
@@ -431,11 +464,11 @@ executeLongMethod = FALSE
 if(executeLongMethod){
   peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
     QTL.peak.finder(threshold = 4.3)
-  save(peak.aS.eQTL, file = paste0(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
-  load(file.path(dirOutputEqtl, "obj_peak.aS.eQTL.Rdata"))
+  save(peak.aS.eQTL, file = file.path(root, paths$output$eqtl, "obj_peak.aS.eQTL.Rdata"))
+  load(file.path(root, paths$output$eqtl, "obj_peak.aS.eQTL.Rdata"))
 } else {
   # Instead of generating: load previously generated peak.aS.eQTL file here:
-  load(file.path(dirDataQtl, "obj_peak.aS.eQTL.Rdata"))
+  load(file.path(root, paths$data$qtl, "obj_peak.aS.eQTL.Rdata"))
 }
 
 # Create eQTL table
@@ -473,7 +506,7 @@ aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
                                        merge_condition = 1)
 
 # Save
-save(aS.eQTL.table, file = paste0(dirOutputElisa, "obj_aS.eQTL.table.Rdata"))         
+save(aS.eQTL.table, file = file.path(root, paths$output$eqtl, "obj_aS.eQTL.table.Rdata"))         
 
 
 # ------------------------------------------------------------------------------
@@ -490,15 +523,15 @@ if(executeLongMethod){
                                  n_per_marker = 10)
   
   aS.simulation
-  save(aS.simulation, file = file.path(dirOutputEqtl, "aS.simulation.RData"))
-  load(file.path(dirOutputEqtl, "aS.simulation.RData"))
+  save(aS.simulation, file = file.path(root, paths$output$eqtl, "aS.simulation.RData"))
+  load(file.path(root, paths$output$eqtl, "aS.simulation.RData"))
 } else {
   # Instead of generating: load previously generated aS.simulation file here:
-  load(file.path(dirDataQtl, "aS.simulation.RData"))
+  load(file.path(root, paths$data$qtl, "aS.simulation.RData"))
 }
 
 writexl::write_xlsx(aS.eQTL.table,
-                    path = paste0(dirOutputEqtl, "Supplementary_table5-eQTL.xlsx"))
+                    path = file.path(root, paths$output$eqtl, "Supplementary_table5-eQTL.xlsx"))
 
 # Make a table with eQTL peaks for plotting.
 # This function adds points to faithfully indicate the chromosome boundaries (standard is C. elegans))
@@ -574,6 +607,24 @@ geneInfo <- fromJSON(content(res, "text", encoding = "UTF-8"))
 geneInfo <- geneInfo[, c("query", "name")]
 geneInfo
 
+# Write these genes to a .pdf file
+df <- geneInfo
+colnames(df) <- c("Gene", "Description")
+df <- geneInfo
+colnames(df) <- c("Gene", "Description")
+df$Description <- str_wrap(df$Description, width = 50)
+pdf(file.path(paths$output$genes, "geneInfo.pdf"), width = 8.5, height = 11)
+rows_per_page <- 35
+n <- nrow(df)
+tt <- ttheme_default(base_size = 8)
+for (i in seq(1, n, by = rows_per_page)) {
+  grid.table(
+    df[i:min(i + rows_per_page - 1, n), ],
+    theme = tt
+  )
+  if (i + rows_per_page <= n) grid.newpage()
+}
+dev.off()
 
 # ------------------------------------------------------------------------------
 # Draw eQTL profiles and boxplots for genes of interest
@@ -584,7 +635,7 @@ spotIds <- aS.eQTL.table[[1]]
 geneNames <- aS.eQTL.table[[16]]
 
 # Open pdf device
-pdf(file = paste0(dirOutput, "boxplotsForGenes.pdf"), width = 10, height = 14)
+pdf(file = file.path(root, paths$output$genes, "boxplotsForGenes.pdf"), width = 10, height = 14)
 
 # Create an aQTL profile and a boxplot for every selected gene
 for (i in seq_along(spotIds)) {
@@ -669,23 +720,24 @@ lapply(data.pQTL, head)
 
 # function for single marker mapping
 aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
-save(aS.pQTL, file = paste0(dirOutputElisa, "/obj_aS.pQTL.Rdata"))
+save(aS.pQTL, file = file.path(paths$output$elisa, "/obj_aS.pQTL.Rdata"))
 
 # Permutation for single marker mapping
 elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
-save(elisa.QTL.perm, file = paste0(dirOutputElisa, "obj_elisa.QTL.perm.Rdata"))
+save(elisa.QTL.perm, file = file.path(paths$output$elisa, "obj_elisa.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
 elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
-                           filenames.perm = "/output/elisa/obj_elisa.QTL.perm.Rdata",
+                           filenames.perm = "/obj_elisa.QTL.perm.Rdata",
+                           FDR_dir = file.path(root, paths$output$elisa),
                            q.value = 0.025,
                            small = TRUE)
 thresholdElisa <- elisa.FDR[[1]] / 10 # 3.21
-save(elisa.FDR, file = paste0(dirOutputElisa, "obj_RIL.elis.FDR.Rdata"))
+save(elisa.FDR, file = file.path(paths$output$elisa, "obj_RIL.elis.FDR.Rdata"))
 
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
   QTL.peak.finder(threshold = thresholdElisa)
-save(peak.aS.pQTL, file = paste0(dirOutputElisa, "obj_peak.aS.QTL.Rdata"))
+save(peak.aS.pQTL, file = file.path(paths$output$elisa, "obj_peak.aS.QTL.Rdata"))
 
 # Plot peak.aS.pQTL
 plotPqtlProfile <- ggplot(peak.aS.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -725,23 +777,24 @@ lapply(data.pQTL, head)
 
 # function for single marker mapping
 qpcr.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
-save(qpcr.pQTL, file = paste0(dirOutputQpcr, "/obj_qpcr.pQTL.Rdata"))
+save(qpcr.pQTL, file = file.path(paths$output$qpcr, "obj_qpcr.pQTL.Rdata"))
 
 # Permutation for single marker mapping
 qpcr.QTL.perm <- QTL.map.1.perm(qpcr.pQTL[[1]], qpcr.pQTL[[2]], qpcr.pQTL[[3]], 1000)
-save(qpcr.QTL.perm, file = paste0(dirOutputQpcr, "obj_qpcr.pQTL.perm.Rdata"))
+save(qpcr.QTL.perm, file = file.path(paths$output$qpcr, "obj_qpcr.pQTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
 qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
-                           filenames.perm = "/output/qpcr/obj_qpcr.pQTL.perm.Rdata",
-                           q.value = 0.025,
-                           small = TRUE)
+                          filenames.perm = "/obj_qpcr.pQTL.perm.Rdata",
+                          FDR_dir = file.path(root, paths$output$qpcr),
+                          q.value = 0.025,
+                          small = TRUE)
 thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
-save(qpcr.FDR, file = paste0(dirOutputQpcr, "obj_RIL.qpcr.FDR.Rdata"))
+save(qpcr.FDR, file = file.path(paths$output$qpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
   QTL.peak.finder(threshold = thresholdQpcr)
-save(peak.qpcr.pQTL, file = paste0(dirOutputQpcr, "obj_peak.qpcr.pQTL.Rdata"))
+save(peak.qpcr.pQTL, file = file.path(paths$output$qpcr, "obj_peak.qpcr.pQTL.Rdata"))
 
 # Plot peak.qpcr.pQTL
 plotQpcrProfile <- ggplot(peak.qpcr.pQTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -803,50 +856,54 @@ data_pl <- QTL.data.prep(data_pl, colnames(data_pl), populationMap, populationMa
 
 # function for single marker mapping
 dr.QTL <- QTL.map.1(data_DR[[1]], data_DR[[2]], data_DR[[3]])
-save(dr.QTL, file = paste0(dirOutputLifespan, "/obj_dr.QTL.Rdata"))
+save(dr.QTL, file = file.path(paths$output$lifespan, "obj_dr.QTL.Rdata"))
 ngm.QTL <- QTL.map.1(data_NGM[[1]], data_NGM[[2]], data_NGM[[3]])
-save(ngm.QTL, file = paste0(dirOutputLifespan, "/obj_ngm.QTL.Rdata"))
+save(ngm.QTL, file = file.path(paths$output$lifespan, "obj_ngm.QTL.Rdata"))
 pl.QTL <- QTL.map.1(data_pl[[1]], data_pl[[2]], data_pl[[3]])
-save(pl.QTL, file = paste0(dirOutputLifespan, "/obj_pl.QTL.Rdata"))
+save(pl.QTL, file = file.path(paths$output$lifespan, "obj_pl.QTL.Rdata"))
 
 # Permutation for single marker mapping
 dr.QTL.perm <- QTL.map.1.perm(dr.QTL[[1]], dr.QTL[[2]], dr.QTL[[3]], 1000)
-save(dr.QTL.perm, file = paste0(dirOutputLifespan, "obj_dr.QTL.perm.Rdata"))
+save(dr.QTL.perm, file = file.path(paths$output$lifespan, "obj_dr.QTL.perm.Rdata"))
 ngm.QTL.perm <- QTL.map.1.perm(ngm.QTL[[1]], ngm.QTL[[2]], ngm.QTL[[3]], 1000)
-save(ngm.QTL.perm, file = paste0(dirOutputLifespan, "obj_ngm.QTL.perm.Rdata"))
+save(ngm.QTL.perm, file = file.path(paths$output$lifespan, "obj_ngm.QTL.perm.Rdata"))
 pl.QTL.perm <- QTL.map.1.perm(pl.QTL[[1]], pl.QTL[[2]], pl.QTL[[3]], 1000)
-save(pl.QTL.perm, file = paste0(dirOutputLifespan, "obj_pl.QTL.perm.Rdata"))
+save(pl.QTL.perm, file = file.path(paths$output$lifespan, "obj_pl.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
 dr.FDR <- QTL.map.1.FDR(map1.output = dr.QTL,
-                          filenames.perm = "/output/lifespan/obj_dr.QTL.perm.Rdata",
-                          q.value = 0.025,
-                          small = TRUE)
+                        filenames.perm = "/obj_dr.QTL.perm.Rdata",
+                        FDR_dir = file.path(root, paths$output$lifespan),
+                        q.value = 0.025,
+                        small = TRUE
+)
 thresholdDr <- dr.FDR[[1]] / 10 # 2.5
-save(dr.FDR, file = paste0(dirOutputLifespan, "obj_RIL.DR.FDR.Rdata"))
+save(dr.FDR, file = file.path(paths$output$lifespan, "obj_RIL.DR.FDR.Rdata"))
 peak.dr.QTL <- QTL.map1.dataframe(map1.output = dr.QTL) %>%
   QTL.peak.finder(threshold = thresholdDr)
-save(peak.dr.QTL, file = paste0(dirOutputLifespan, "obj_peak.dr.QTL.Rdata"))
+save(peak.dr.QTL, file = file.path(paths$output$lifespan, "obj_peak.dr.QTL.Rdata"))
 
 ngm.FDR <- QTL.map.1.FDR(map1.output = ngm.QTL,
-                        filenames.perm = "/output/lifespan/obj_ngm.QTL.perm.Rdata",
+                        filenames.perm = "/obj_ngm.QTL.perm.Rdata",
+                        FDR_dir = file.path(root, paths$output$lifespan),
                         q.value = 0.025,
                         small = TRUE)
 thresholdNgm <- ngm.FDR[[1]] / 10 # 3.84
-save(ngm.FDR, file = paste0(dirOutputLifespan, "obj_RIL.ngm.FDR.Rdata"))
+save(ngm.FDR, file = file.path(paths$output$lifespan, "obj_RIL.ngm.FDR.Rdata"))
 peak.ngm.QTL <- QTL.map1.dataframe(map1.output = ngm.QTL) %>%
   QTL.peak.finder(threshold = thresholdNgm)
-save(peak.ngm.QTL, file = paste0(dirOutputLifespan, "obj_peak.ngm.QTL.Rdata"))
+save(peak.ngm.QTL, file = file.path(paths$output$lifespan, "obj_peak.ngm.QTL.Rdata"))
 
 pl.FDR <- QTL.map.1.FDR(map1.output = pl.QTL,
-                        filenames.perm = "/output/lifespan/obj_pl.QTL.perm.Rdata",
+                        filenames.perm = "/obj_pl.QTL.perm.Rdata",
+                        FDR_dir = file.path(root, paths$output$lifespan),
                         q.value = 0.025,
                         small = TRUE)
 thresholdPl <- pl.FDR[[1]] / 10 # 2.66
-save(pl.FDR, file = paste0(dirOutputLifespan, "obj_RIL.pl.FDR.Rdata"))
+save(pl.FDR, file = file.path(paths$output$lifespan, "obj_RIL.pl.FDR.Rdata"))
 peak.pl.QTL <- QTL.map1.dataframe(map1.output = pl.QTL) %>%
   QTL.peak.finder(threshold = thresholdPl)
-save(peak.pl.QTL, file = paste0(dirOutputLifespan, "obj_peak.pl.QTL.Rdata"))
+save(peak.pl.QTL, file = file.path(paths$output$lifespan, "obj_peak.pl.QTL.Rdata"))
 
 # Plot peak.dr.pQTL
 plotLifespanDr <- ggplot(peak.dr.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +

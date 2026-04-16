@@ -14,8 +14,8 @@ transcriptomics.check.cor <- function(trans.int,filename,save_dir){
                                          write.table(correlations,file=paste(save_dir,date.now(),"_correlations.txt",sep=""),sep="\t",quote=F)
                                      correlsum <- apply(correlations,1,mean)
       
-                                     if(filename==""){pdf(file=paste(save_dir,date.now(),"_correlation.check.pdf",sep=""),width=20,height=9)}
-                                     if(filename!=""){pdf(file=paste(save_dir,date.now(),"_",filename,"_correlation.check.pdf",sep=""),width=20,height=9)}
+                                     if(filename==""){pdf(file=paste(save_dir,"/",date.now(),"_correlation.check.pdf",sep=""),width=20,height=9)}
+                                     if(filename!=""){pdf(file=paste(save_dir,"/",date.now(),"_",filename,"_correlation.check.pdf",sep=""),width=20,height=9)}
                                          ###Log2int sample correlations
                                          axis.nu <- axis.output(1,length(correlsum))
                                          par(fig=c(0.3,0.7,0.1,0.9))
