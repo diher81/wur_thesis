@@ -936,7 +936,8 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5) + 
+    ggtitle("Figure 10: Dietary restriction") 
   
   # Plot peak.ngm.pQTL
   plotLifespanNgm <- ggplot(peak.ngm.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -955,7 +956,8 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5) + 
+    ggtitle("Figure 11: NGM") 
   
   # Plot peak.pl.pQTL
   plotLifespanPl <- ggplot(peak.pl.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -974,7 +976,8 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5) + 
+    ggtitle("Figure 12: Plasticity") 
   
   globalTitle <- grid::textGrob(
     label = paste("QTL mapping for trait", tr),
