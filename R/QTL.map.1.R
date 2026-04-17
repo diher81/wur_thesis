@@ -49,7 +49,13 @@ QTL.map.1 <- function(trait.matrix,strain.map,strain.marker){
   pval.out <- matrix(NA, nrow(trait.matrix), nrow(strain.map))
   
   
-  for (i in 1:nrow(strain.map)) {
+  for (i in seq_len(nrow(strain.map))) {
+    
+    # Progress message every 100 iterations
+    if (i %% 100 == 0 || i == 1 || i == nrow(strain.map)) {
+      message("Processing marker ", i, "/", nrow(strain.map))
+    }
+    
     noseg <- length(unique(strain.map[i, ])) == 1
     if (noseg) {
       output.tmp <- matrix(

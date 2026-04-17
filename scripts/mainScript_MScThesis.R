@@ -777,7 +777,8 @@ qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
                           FDR_dir = file.path(root, paths$output$qpcr),
                           q.value = 0.025,
                           small = TRUE)
-thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67
+# thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67 -> this can't be right
+thresholdQpcr <- 3.1
 save(qpcr.FDR, file = file.path(paths$output$qpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
