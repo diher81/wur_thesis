@@ -807,6 +807,10 @@ print(plotQpcrProfile)
 
 # QTL mapping
 traits <- unique(life_data_stats$trait)
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
+
+# Open pdf device
+pdf(file = file.path(root, paths$output$lifespan, "lifespanQTLmapping.pdf"), width = 10, height = 14)
 
 for (tr in traits) {
   data.QTL <- life_data_stats %>%
@@ -932,9 +936,7 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5) +
-    ggtitle(paste("Figure 10: QTL mapping for Lifespan - DR -", tr))
-  print(plotLifespanDr)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5)
   
   # Plot peak.ngm.pQTL
   plotLifespanNgm <- ggplot(peak.ngm.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -953,9 +955,7 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5) +
-    ggtitle(paste("Figure 11: QTL mapping for Lifespan - NGM -", tr))
-  print(plotLifespanNgm)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5)
   
   # Plot peak.pl.pQTL
   plotLifespanPl <- ggplot(peak.pl.QTL, aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
@@ -974,7 +974,35 @@ for (tr in traits) {
          y = expression(bold("QTL significance")),
          parse = TRUE) +
     scale_x_continuous(breaks = c(0, 10, 20) * 10^6,
-                       labels = c(0, 10, 20)) + ylim(0, 5.5) +
-    ggtitle(paste("Figure 12: QTL mapping for Lifespan - Plasticity -", tr))
-  print(plotLifespanPl)
+                       labels = c(0, 10, 20)) + ylim(0, 5.5)
+  
+  globalTitle <- grid::textGrob(
+    label = paste("QTL mapping for trait", tr),
+    gp = grid::gpar(fontsize = 22, fontface = "bold"),
+    hjust = 0.5
+  )
+  
+  # Draw to pdf
+  left_col <- arrangeGrob(
+    plotLifespanNgm,
+    plotLifespanDr,
+    ncol = 1
+  )
+  
+  right_col <- arrangeGrob(
+    plotLifespanPl, 
+    blank.plot,
+    ncol = 1
+  )
+  
+  # Combine everything
+  grid.arrange(
+    globalTitle,
+    arrangeGrob(left_col, right_col, ncol = 2),
+    ncol = 1,
+    heights = c(1, 10)
+  )
 }
+
+# Close pdf
+dev.off()
