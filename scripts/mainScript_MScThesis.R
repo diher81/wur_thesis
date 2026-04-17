@@ -1026,6 +1026,7 @@ dev.off()
 popmap_in <- populationMap
 popmap_in[is.na(popmap_in)] <- 0
 
+# eQTL mapping
 data.QTL.lifespan <- life_data_stats %>%
   dplyr::filter(!Strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
   dplyr::mutate(treatment_trait = paste0(Treatment, "_", trait)) %>%
@@ -1033,15 +1034,11 @@ data.QTL.lifespan <- life_data_stats %>%
   tidyr::pivot_wider(names_from = Strain, values_from = value) %>%
   tibble::column_to_rownames("treatment_trait")
 
+data.QTL.lifespan <- data.matrix(data.QTL.lifespan)
 # CHECK V
 
-# eQTL mapping
-data.eQTL <- filter(list.data.RIL, !strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
-  dplyr::select(SpotID, strain, log2_intensities) %>%
-  spread(key = strain, value = log2_intensities) %>%
-  tibble::column_to_rownames("SpotID")
 
-data.eQTL <- data.matrix(data.eQTL)
+
 
 # Data preparation for QTL mapping
 # Returns a list with the entries Trait (log2 intensities), Map, and Marker, 
