@@ -11,7 +11,7 @@
 #these columns are only non-NA where a QTL peak is located.
 
 ###Description
-#This takes output of mapping.to.list function and identiefies peaks and confidence intervals v1.3
+#This takes output of mapping.to.list function and identifies peaks and confidence intervals v1.3
 #Based on a given threshold and a 1.5 LOD-drop.
 #v1.2 made the function more efficient, the peak borders are selected in one processing
 #v1.3 fixed the problem calling the peak if the peak borders the edge of the chromosome
