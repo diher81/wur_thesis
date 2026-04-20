@@ -227,6 +227,7 @@ myColors <- c(brewer.pal(9,"Set1")[c(2,5)],
               rep(brewer.pal(12,"Paired")[c(8,2,7,1)], times = 3))
 fillScale <- scale_fill_manual(name = "Treatment", values = myColors)
 colScale <- scale_colour_manual(name = "Treatment", values = myColors)
+blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 
 
 # ------------------------------------------------------------------------------
@@ -340,7 +341,6 @@ figure_3_gen_distr <- ggplot(data.plot, aes(x = Position, y = n, fill = genotype
 print(figure_3_gen_distr)
 
 # Figure 4: Genetic map
-blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 layout <- rbind(c(1,2),c(1,3),c(1,4))
 
 annotation.grobA <- title.grob <- grid::textGrob(label = "A",
@@ -808,9 +808,44 @@ print(plotQpcrProfile)
 # Lifespan
 # ------------------------------------------------------------------------------
 
+# Calculate lifespan threshold
+popmap_in <- populationMap
+popmap_in[is.na(popmap_in)] <- 0
+
+# QTL mapping
+data.QTL.lifespan <- life_data_stats %>%
+  dplyr::filter(!Strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
+  dplyr::mutate(treatment_trait = paste0(Treatment, "_", trait)) %>%
+  dplyr::select(Strain, treatment_trait, value) %>%
+  tidyr::pivot_wider(names_from = Strain, values_from = value) %>%
+  tibble::column_to_rownames("treatment_trait")
+
+data.QTL.lifespan <- data.matrix(data.QTL.lifespan)
+
+# Data preparation for QTL mapping
+data.QTL.lifespan <- QTL.data.prep(data.QTL.lifespan, 
+                                   colnames(data.QTL.lifespan), 
+                                   populationMap, 
+                                   populationMarkers)
+
+# function for single marker mapping
+lifespan.QTL <- QTL.map.1(data.QTL.lifespan[[1]], data.QTL.lifespan[[2]], data.QTL.lifespan[[3]])
+save(lifespan.QTL, file = file.path(root, paths$output$lifespan, "/obj_lifespan.QTL.Rdata"))
+
+# Permutation for single marker mapping
+lifespan.QTL.perm <- QTL.map.1.perm(lifespan.QTL[[1]], lifespan.QTL[[2]], lifespan.QTL[[3]], 1000)
+save(lifespan.QTL.perm, file = file.path(paths$output$lifespan, "obj_lifespan.QTL.perm.Rdata"))
+
+# FDR calculation for single marker mapping
+lifespan.FDR <- QTL.map.1.FDR(map1.output = lifespan.QTL,
+                              filenames.perm = "/obj_lifespan.QTL.perm.Rdata",
+                              FDR_dir = file.path(root, paths$output$lifespan),
+                              q.value = 0.025,
+                              small = TRUE)
+thresholdLifespan <- lifespan.FDR[[1]] / 10 # 5.71
+
 # QTL mapping
 traits <- unique(life_data_stats$trait)
-blank.plot <- ggplot() + geom_blank(aes(1,1)) + blankTheme
 
 # Open pdf device
 pdf(file = file.path(root, paths$output$lifespan, "lifespanQTLmapping.pdf"), width = 10, height = 14)
@@ -864,61 +899,19 @@ for (tr in traits) {
   save(ngm.QTL, file = file.path(paths$output$lifespan, "obj_ngm.QTL.Rdata"))
   pl.QTL <- QTL.map.1(data_pl[[1]], data_pl[[2]], data_pl[[3]])
   save(pl.QTL, file = file.path(paths$output$lifespan, "obj_pl.QTL.Rdata"))
-  
-  # Permutation for single marker mapping
-  dr.QTL.perm <- QTL.map.1.perm(dr.QTL[[1]], dr.QTL[[2]], dr.QTL[[3]], 1000)
-  save(dr.QTL.perm,
-       file = file.path(paths$output$lifespan, "obj_dr.QTL.perm.Rdata"))
-  ngm.QTL.perm <- QTL.map.1.perm(ngm.QTL[[1]], ngm.QTL[[2]], ngm.QTL[[3]], 1000)
-  save(ngm.QTL.perm,
-       file = file.path(paths$output$lifespan, "obj_ngm.QTL.perm.Rdata"))
-  pl.QTL.perm <- QTL.map.1.perm(pl.QTL[[1]], pl.QTL[[2]], pl.QTL[[3]], 1000)
-  save(pl.QTL.perm,
-       file = file.path(paths$output$lifespan, "obj_pl.QTL.perm.Rdata"))
-  
-  # FDR calculation for single marker mapping
-  dr.FDR <- QTL.map.1.FDR(
-    map1.output = dr.QTL,
-    filenames.perm = "/obj_dr.QTL.perm.Rdata",
-    FDR_dir = file.path(root, paths$output$lifespan),
-    q.value = 0.025,
-    small = TRUE
-  )
-  thresholdDr <- dr.FDR[[1]] / 10 # 2.5
-  save(dr.FDR,
-       file = file.path(paths$output$lifespan, "obj_RIL.DR.FDR.Rdata"))
+
   peak.dr.QTL <- QTL.map1.dataframe(map1.output = dr.QTL) %>%
-    QTL.peak.finder(threshold = thresholdDr)
+    QTL.peak.finder(threshold = thresholdLifespan)
   save(peak.dr.QTL,
        file = file.path(paths$output$lifespan, "obj_peak.dr.QTL.Rdata"))
   
-  ngm.FDR <- QTL.map.1.FDR(
-    map1.output = ngm.QTL,
-    filenames.perm = "/obj_ngm.QTL.perm.Rdata",
-    FDR_dir = file.path(root, paths$output$lifespan),
-    q.value = 0.025,
-    small = TRUE
-  )
-  thresholdNgm <- ngm.FDR[[1]] / 10 # 3.84
-  save(ngm.FDR,
-       file = file.path(paths$output$lifespan, "obj_RIL.ngm.FDR.Rdata"))
   peak.ngm.QTL <- QTL.map1.dataframe(map1.output = ngm.QTL) %>%
-    QTL.peak.finder(threshold = thresholdNgm)
+    QTL.peak.finder(threshold = thresholdLifespan)
   save(peak.ngm.QTL,
        file = file.path(paths$output$lifespan, "obj_peak.ngm.QTL.Rdata"))
   
-  pl.FDR <- QTL.map.1.FDR(
-    map1.output = pl.QTL,
-    filenames.perm = "/obj_pl.QTL.perm.Rdata",
-    FDR_dir = file.path(root, paths$output$lifespan),
-    q.value = 0.025,
-    small = TRUE
-  )
-  thresholdPl <- pl.FDR[[1]] / 10 # 2.66
-  save(pl.FDR,
-       file = file.path(paths$output$lifespan, "obj_RIL.pl.FDR.Rdata"))
   peak.pl.QTL <- QTL.map1.dataframe(map1.output = pl.QTL) %>%
-    QTL.peak.finder(threshold = thresholdPl)
+    QTL.peak.finder(threshold = thresholdLifespan)
   save(peak.pl.QTL,
        file = file.path(paths$output$lifespan, "obj_peak.pl.QTL.Rdata"))
   
@@ -930,7 +923,7 @@ for (tr in traits) {
     theme(legend.position = "none",
           plot.margin = margin(10, 30, 10, 30)) +
     geom_abline(
-      intercept = thresholdDr,
+      intercept = thresholdLifespan,
       slope = 0,
       linetype = 2,
       size = 1
@@ -950,7 +943,7 @@ for (tr in traits) {
     theme(legend.position = "none",
           plot.margin = margin(10, 30, 10, 30)) +
     geom_abline(
-      intercept = thresholdNgm,
+      intercept = thresholdLifespan,
       slope = 0,
       linetype = 2,
       size = 1
@@ -970,7 +963,7 @@ for (tr in traits) {
     theme(legend.position = "none",
           plot.margin = margin(10, 30, 10, 30)) +
     geom_abline(
-      intercept = thresholdPl,
+      intercept = thresholdLifespan,
       slope = 0,
       linetype = 2,
       size = 1
@@ -1012,55 +1005,4 @@ for (tr in traits) {
 
 # Close pdf
 dev.off()
-
-
-
-
-
-
-
-################################################################################
-################################################################################
-# Lifespan code above should be replaced with this:
-################################################################################
-################################################################################
-
-popmap_in <- populationMap
-popmap_in[is.na(popmap_in)] <- 0
-
-# QTL mapping
-data.QTL.lifespan <- life_data_stats %>%
-  dplyr::filter(!Strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
-  dplyr::mutate(treatment_trait = paste0(Treatment, "_", trait)) %>%
-  dplyr::select(Strain, treatment_trait, value) %>%
-  tidyr::pivot_wider(names_from = Strain, values_from = value) %>%
-  tibble::column_to_rownames("treatment_trait")
-
-data.QTL.lifespan <- data.matrix(data.QTL.lifespan)
-
-# Data preparation for QTL mapping
-# Returns a list with the entries Trait (lifespan), Map, and Marker, 
-# where the Traits are aligned with the map
-data.QTL.lifespan <- QTL.data.prep(data.QTL.lifespan, 
-                                   colnames(data.QTL.lifespan), 
-                                   populationMap, 
-                                   populationMarkers)
-lapply(data.QTL.lifespan, head)  
-
-# function for single marker mapping
-# Generate a list with names: LOD, Effect, Trait, Map, and Marker.
-lifespan.QTL <- QTL.map.1(data.QTL.lifespan[[1]], data.QTL.lifespan[[2]], data.QTL.lifespan[[3]])
-save(lifespan.QTL, file = file.path(root, paths$output$lifespan, "/obj_lifespan.QTL.Rdata"))
-
-# Permutation for single marker mapping
-lifespan.QTL.perm <- QTL.map.1.perm(lifespan.QTL[[1]], lifespan.QTL[[2]], lifespan.QTL[[3]], 1000)
-save(lifespan.QTL.perm, file = file.path(paths$output$lifespan, "obj_lifespan.QTL.perm.Rdata"))
-
-# FDR calculation for single marker mapping
-lifespan.FDR <- QTL.map.1.FDR(map1.output = lifespan.QTL,
-                           filenames.perm = "/obj_lifespan.QTL.perm.Rdata",
-                           FDR_dir = file.path(root, paths$output$lifespan),
-                           q.value = 0.025,
-                           small = TRUE)
-thresholdLifespan <- lifespan.FDR[[1]] / 10 # 5.71
 
