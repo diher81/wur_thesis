@@ -38,7 +38,7 @@ QTL.map.1.FDR <- function(map1.output,filenames.perm,FDR_dir,q.value,small){
                            obj_name <- load(file = paste(FDR_dir, filenames.perm, sep = ""))
                            #<newLines>
                            obj <- get(obj_name)
-                           tmp <- obj$Trait_perm
+                           tmp <- obj$LOD
                            #</newLines>
 
                              ###No NA's
@@ -49,8 +49,8 @@ QTL.map.1.FDR <- function(map1.output,filenames.perm,FDR_dir,q.value,small){
                              
                              ###no Non-traits
                              tmp <- tmp[rownames(tmp) != "",]
-                             output[[2]] <- apply(tmp,1,max,na.rm=T)
-                             
+                             # output[[2]] <- apply(tmp,1,max,na.rm=T)
+                             output[[2]] <- max(tmp, na.rm = TRUE)                             
                              if((length(output[[2]]) * q.value) < 10){
                                   warning(paste("inadvisable to calculate q=",q.value,"based on ",length(output[[2]])," permutations. Increase to at least ", ceiling(10/q.value)))
                              }

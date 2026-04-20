@@ -463,19 +463,22 @@ if(executeLongMethod){
 aS.eQTL.table <- QTL.eQTL.table(
   QTL.peak.dataframe = peak.aS.eQTL,
   cis.trans.window = "LOD.drop",
-  trait.annotation = cbind(trait = agi.id[,1],
-                           dplyr::select(agi.id,
-                                        chromosome, 
-                                        gene_bp_start, 
-                                        gene_WBID, 
-                                        gene_sequence_name, 
-                                        gene_public_name))) %>%
+  trait.annotation = cbind(
+    trait = agi.id[, 1],
+    dplyr::select(
+      agi.id,
+      chromosome,
+      gene_bp_start,
+      gene_WBID,
+      gene_sequence_name,
+      gene_public_name))) %>%
   QTL.table.addR2(aS.eQTL) %>%
-  group_by(gene_public_name,qtl_chromosome) %>%
-  mutate(qtl_representative=ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
+  group_by(gene_public_name, qtl_chromosome) %>%
+  mutate(qtl_representative = ifelse(qtl_R2_sm == max(qtl_R2_sm), "yes", "no")) %>%
   data.frame() %>%
   filter(!is.na(gene_bp), qtl_representative == "yes") %>%
-  arrange(trait); head(aS.eQTL.table)
+  arrange(trait)
+head(aS.eQTL.table)
 
 # Add transband
 call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table, 
@@ -777,8 +780,7 @@ qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
                           FDR_dir = file.path(root, paths$output$qpcr),
                           q.value = 0.025,
                           small = TRUE)
-# thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.67 -> this can't be right
-thresholdQpcr <- 3.1
+thresholdQpcr <- qpcr.FDR[[1]] / 10 # 2.73
 save(qpcr.FDR, file = file.path(paths$output$qpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
@@ -1026,7 +1028,7 @@ dev.off()
 popmap_in <- populationMap
 popmap_in[is.na(popmap_in)] <- 0
 
-# eQTL mapping
+# QTL mapping
 data.QTL.lifespan <- life_data_stats %>%
   dplyr::filter(!Strain %in% c("CB4856", "SCH4856", "N2", "NL5901")) %>%
   dplyr::mutate(treatment_trait = paste0(Treatment, "_", trait)) %>%
@@ -1035,146 +1037,30 @@ data.QTL.lifespan <- life_data_stats %>%
   tibble::column_to_rownames("treatment_trait")
 
 data.QTL.lifespan <- data.matrix(data.QTL.lifespan)
-# CHECK V
-
-
-
 
 # Data preparation for QTL mapping
-# Returns a list with the entries Trait (log2 intensities), Map, and Marker, 
+# Returns a list with the entries Trait (lifespan), Map, and Marker, 
 # where the Traits are aligned with the map
-# AGIWURxxxx = SpotIDs
-data.eQTL <- QTL.data.prep(data.eQTL, 
-                           colnames(data.eQTL), 
-                           populationMap, 
-                           populationMarkers)
-lapply(data.eQTL, head)  
+data.QTL.lifespan <- QTL.data.prep(data.QTL.lifespan, 
+                                   colnames(data.QTL.lifespan), 
+                                   populationMap, 
+                                   populationMarkers)
+lapply(data.QTL.lifespan, head)  
 
 # function for single marker mapping
 # Generate a list with names: LOD, Effect, Trait, Map, and Marker.
-aS.eQTL <- QTL.map.1(data.eQTL[[1]], data.eQTL[[2]], data.eQTL[[3]])
-save(aS.eQTL, file = file.path(root, paths$output$eqtl, "/obj_aS.eQTL.Rdata"))
-str(aS.eQTL)
+lifespan.QTL <- QTL.map.1(data.QTL.lifespan[[1]], data.QTL.lifespan[[2]], data.QTL.lifespan[[3]])
+save(lifespan.QTL, file = file.path(root, paths$output$lifespan, "/obj_lifespan.QTL.Rdata"))
 
-# Build eQTL list file with calculated threshold value 4.3
-# These lines are not executable on workstations due to memory limits
-executeLongMethod = FALSE
-if(executeLongMethod){
-  peak.aS.eQTL <- QTL.map1.dataframe(map1.output = aS.eQTL) %>%
-    QTL.peak.finder(threshold = 4.3)
-  save(peak.aS.eQTL, file = file.path(root, paths$output$eqtl, "obj_peak.aS.eQTL.Rdata"))
-  load(file.path(root, paths$output$eqtl, "obj_peak.aS.eQTL.Rdata"))
-} else {
-  # Instead of generating: load previously generated peak.aS.eQTL file here:
-  load(file.path(root, paths$data$qtl, "obj_peak.aS.eQTL.Rdata"))
-}
+# Permutation for single marker mapping
+lifespan.QTL.perm <- QTL.map.1.perm(lifespan.QTL[[1]], lifespan.QTL[[2]], lifespan.QTL[[3]], 1000)
+save(lifespan.QTL.perm, file = file.path(paths$output$lifespan, "obj_lifespan.QTL.perm.Rdata"))
 
-# Create eQTL table
-aS.eQTL.table <- QTL.eQTL.table(
-  QTL.peak.dataframe = peak.aS.eQTL,
-  cis.trans.window = "LOD.drop",
-  trait.annotation = cbind(trait = agi.id[,1],
-                           dplyr::select(agi.id,
-                                         chromosome, 
-                                         gene_bp_start, 
-                                         gene_WBID, 
-                                         gene_sequence_name, 
-                                         gene_public_name))) %>%
-  QTL.table.addR2(aS.eQTL) %>%
-  group_by(gene_public_name,qtl_chromosome) %>%
-  mutate(qtl_representative=ifelse(qtl_R2_sm == max(qtl_R2_sm),"yes","no")) %>%
-  data.frame() %>%
-  filter(!is.na(gene_bp), qtl_representative == "yes") %>%
-  arrange(trait); head(aS.eQTL.table)
-
-# Add transband
-call.transbands.file <- QTL.eQTL.call.TBs(aS.eQTL.table, 
-                                          window = 0.5e6,
-                                          chromosomes = "III",
-                                          chromosome_size = 13783801)
-
-# This function finds the number of successes that corresponds to a certain percentile 
-# based on an average rate of success. 
-# (The corresponding Poisson quantiles for a set of probabilities are obtained.)
-qpois(0.0001, 18.36, lower.tail = F)
-
-# For every QTL on chromosome III, indicate whether it is located in a trans-band or cis-enriched area
-aS.eQTL.table <-  QTL.eQTL.table.addTB(aS.eQTL.table,
-                                       call.transbands.file,
-                                       merge_condition = 1)
-
-# Save
-save(aS.eQTL.table, file = file.path(root, paths$output$eqtl, "obj_aS.eQTL.table.Rdata"))         
-
-
-# ------------------------------------------------------------------------------
-# power analysis (R only step)
-# ------------------------------------------------------------------------------
-
-# Conduct mapping simulation to investigate power
-# +/- 35 min
-executeLongMethod = FALSE
-if(executeLongMethod){
-  aS.simulation <- QTL.map.1.sim(strain.map = data.eQTL$Map,
-                                 strain.marker = data.eQTL$Marker,
-                                 threshold = 4.3,
-                                 n_per_marker = 10)
-  
-  aS.simulation
-  save(aS.simulation, file = file.path(root, paths$output$eqtl, "aS.simulation.RData"))
-  load(file.path(root, paths$output$eqtl, "aS.simulation.RData"))
-} else {
-  # Instead of generating: load previously generated aS.simulation file here:
-  load(file.path(root, paths$data$qtl, "aS.simulation.RData"))
-}
-
-writexl::write_xlsx(aS.eQTL.table,
-                    path = file.path(root, paths$output$eqtl, "Supplementary_table5-eQTL.xlsx"))
-
-# Make a table with eQTL peaks for plotting.
-# This function adds points to faithfully indicate the chromosome boundaries (standard is C. elegans))
-plot.data <- prep.ggplot.eQTL.table(aS.eQTL.table) 
-
-figure_6_locations <- ggplot(plot.data, aes(x = qtl_bp,y = gene_bp)) +
-  geom_segment(aes(x = qtl_bp_left,
-                   y = gene_bp,
-                   xend = qtl_bp_right,
-                   yend = gene_bp),
-               alpha = 0.25,colour = "darkgrey") + 
-  geom_point(aes(colour  =  qtl_type),
-             size = 0.6, alpha = 0.5)  +
-  facet_grid(gene_chromosome ~ qtl_chromosome, 
-             space  =  "free",
-             scales = "free") + 
-  presentation + colScale + 
-  theme(legend.position  =  "none") +
-  labs(x = "eQTL peak position (Mb)",
-       y = "Gene position (Mb)") + 
-  ggtitle("Figure 6: eQTL locations") +
-  theme(panel.spacing = unit(0.1,"lines")) +
-  scale_x_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20)) +
-  scale_y_continuous(breaks = c(5,10,15,20)*10^6, labels = c(5,10,15,20))
-
-figure_6_locations
-
-plot.data <- filter(aS.eQTL.table, qtl_type == "trans") %>%
-  prep.ggplot.eQTL.table() 
-
-figure_7_eQTL_counts <- ggplot(plot.data, aes(x = qtl_bp,fill = qtl_type)) +
-  geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty = 2,lwd = 1.2) +
-  facet_grid(c("")~qtl_chromosome, space  =  "free",scales = "free") + presentation + 
-  fillScale + theme(legend.position  =  "none",
-                    panel.spacing = unit(0.1,"lines")) +
-  labs(x = "eQTL peak position (Mb)", y = "eQTL counts") +
-  ggtitle("Figure 7: eQTL") +
-  scale_x_continuous(breaks = c(5,10,15,20)*10^6,
-                     labels = c(5,10,15,20))
-
-figure_7_eQTL_counts
-################################################################################
-################################################################################
-# Lifespan code above should be replaced with this
-################################################################################
-################################################################################
-
+# FDR calculation for single marker mapping
+lifespan.FDR <- QTL.map.1.FDR(map1.output = lifespan.QTL,
+                           filenames.perm = "/obj_lifespan.QTL.perm.Rdata",
+                           FDR_dir = file.path(root, paths$output$lifespan),
+                           q.value = 0.025,
+                           small = TRUE)
+thresholdLifespan <- lifespan.FDR[[1]] / 10 # 5.71
 
