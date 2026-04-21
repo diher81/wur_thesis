@@ -714,16 +714,17 @@ aS.pQTL <- QTL.map.1(data.pQTL[[1]], data.pQTL[[2]], data.pQTL[[3]])
 save(aS.pQTL, file = file.path(paths$output$elisa, "/obj_aS.pQTL.Rdata"))
 
 # Permutation for single marker mapping
-elisa.QTL.perm <- QTL.map.1.perm(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
+elisa.QTL.perm <- QTL.map.1.perm2(aS.pQTL[[1]], aS.pQTL[[2]], aS.pQTL[[3]], 1000)
 save(elisa.QTL.perm, file = file.path(paths$output$elisa, "obj_elisa.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
-elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
+elisa.FDR <- QTL.map.1.FDR2(map1.output = aS.pQTL,
                            filenames.perm = "/obj_elisa.QTL.perm.Rdata",
                            FDR_dir = file.path(root, paths$output$elisa),
                            q.value = 0.025,
                            small = TRUE)
-thresholdElisa <- elisa.FDR[[1]] / 10 # 3.21
+thresholdElisa <- elisa.FDR[[1]] / 10 # 1.62
+thresholdElisa
 save(elisa.FDR, file = file.path(paths$output$elisa, "obj_RIL.elis.FDR.Rdata"))
 
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
@@ -775,12 +776,13 @@ qpcr.QTL.perm <- QTL.map.1.perm(qpcr.pQTL[[1]], qpcr.pQTL[[2]], qpcr.pQTL[[3]], 
 save(qpcr.QTL.perm, file = file.path(paths$output$qpcr, "obj_qpcr.pQTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
-qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
+qpcr.FDR <- QTL.map.1.FDR2(map1.output = qpcr.pQTL,
                           filenames.perm = "/obj_qpcr.pQTL.perm.Rdata",
                           FDR_dir = file.path(root, paths$output$qpcr),
                           q.value = 0.025,
                           small = TRUE)
-thresholdQpcr <- qpcr.FDR[[1]] / 10 # 2.73
+thresholdQpcr <- qpcr.FDR[[1]] / 10 # 1.63
+thresholdQpcr
 save(qpcr.FDR, file = file.path(paths$output$qpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
@@ -837,12 +839,13 @@ lifespan.QTL.perm <- QTL.map.1.perm(lifespan.QTL[[1]], lifespan.QTL[[2]], lifesp
 save(lifespan.QTL.perm, file = file.path(paths$output$lifespan, "obj_lifespan.QTL.perm.Rdata"))
 
 # FDR calculation for single marker mapping
-lifespan.FDR <- QTL.map.1.FDR(map1.output = lifespan.QTL,
+lifespan.FDR <- QTL.map.1.FDR2(map1.output = lifespan.QTL,
                               filenames.perm = "/obj_lifespan.QTL.perm.Rdata",
                               FDR_dir = file.path(root, paths$output$lifespan),
                               q.value = 0.025,
                               small = TRUE)
-thresholdLifespan <- lifespan.FDR[[1]] / 10 # 5.71
+thresholdLifespan <- lifespan.FDR[[1]] / 10 # 1.6
+thresholdLifespan
 
 # QTL mapping
 traits <- unique(life_data_stats$trait)

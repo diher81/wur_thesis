@@ -16,11 +16,11 @@
 
 
 
-QTL.map.1.FDR <- function(map1.output,
-                          filenames.perm,
-                          FDR_dir,
-                          q.value,
-                          small) {
+QTL.map.1.FDR2 <- function(map1.output,
+                           filenames.perm,
+                           FDR_dir,
+                           q.value,
+                           small) {
   if (missing(map1.output)) {
     stop("Missing map1.output ([[LOD]],[[Effect]],[[Trait]],[[Map]],[[Marker]])")
   }
@@ -44,24 +44,31 @@ QTL.map.1.FDR <- function(map1.output,
   rownames(output[[2]]) <- seq(0.1, 500, by = 0.1)
   colnames(output[[2]]) <- filenames.perm
   
-  ###in case of one trait
+  ### In case of one trait (small = TRUE)
   if (small) {
     if (length(filenames.perm) > 1) {
-      stop("needs one permutatation file, with n permutations")
+      stop("needs one permutation file, with n permutations")
     }
     
+    # Load permutation object
     obj_name <- load(file = paste(FDR_dir, filenames.perm, sep = ""))
-    obj <- get(obj_name) # This was added to original method
-    tmp <- obj$LOD # This was added to original method
+    obj <- get(obj_name)
     
-    ###No NA's
-    #tmp <- get(tmp)[[1]] # This was deleted from original method
+    # Extract LOD matrix (should be n_perm x 1 or n_perm x n_traits)
+    tmp <- obj$LOD
+    
+    # Handle NAs
     tmp[is.na(tmp)] <- 0.1
     
-    ###no Non-traits
-    tmp <- tmp[rownames(tmp) != "", ]
-    # output[[2]] <- apply(tmp,1,max,na.rm=T)
-    output[[2]] <- max(tmp, na.rm = TRUE)
+    # Convert to vector if it's a matrix with one column
+    if (is.matrix(tmp) && ncol(tmp) == 1) {
+      tmp <- as.vector(tmp)
+    }
+    
+    # CRITICAL FIX: Keep all permutation max LODs, don't take max()
+    output[[2]] <- tmp  # Now a vector of length = number of permutations
+    
+    # Warning if too few permutations for stable FDR
     if ((length(output[[2]]) * q.value) < 10) {
       warning(
         paste(
@@ -75,20 +82,24 @@ QTL.map.1.FDR <- function(map1.output,
       )
     }
     
-    ###take the q-cutoff, *10 is to be consistent with eQTL methodology (is per 0.1)
-    output[[1]] <- rev(sort(output[[2]]))[ceiling(q.value * length(output[[2]]))] * 10
+    # Calculate threshold: (1 - q.value) quantile of null max LOD distribution
+    # Multiply by 10 for consistency with eQTL methodology (per 0.1 LOD unit)
+    sorted_nulls <- rev(sort(output[[2]]))
+    idx <- ceiling(q.value * length(output[[2]]))
+    output[[1]] <- sorted_nulls[idx] * 10
     
-    ###again, to be consistent;
+    # Average false discovery (for reporting)
     output[[3]] <- mean(output[[2]], na.rm = TRUE)
     
-    ###real data
-    output[[4]] <- max(map1.output$LOD, na.rm = TRUE)
+    # Real data max LOD
+    real_max <- max(map1.output$LOD, na.rm = TRUE)
+    output[[4]] <- real_max
     
     names(output) <- c(
       "Significance_threshold",
-      "False_discoveries",
-      "False_discoveries_average",
-      "Real_discoveries"
+      "Null_maxLOD_distribution",
+      "Null_maxLOD_mean",
+      "Observed_maxLOD"
     )
   }
   
@@ -126,8 +137,7 @@ QTL.map.1.FDR <- function(map1.output,
       map1.output$LOD
     )[1]) * q.value * log10(dim(
       map1.output$LOD
-    )[1]), digits =
-      3) - round(output[[3]] / output[[4]], digits = 3) > 0)[1]
+    )[1]), digits = 3) - round(output[[3]] / output[[4]], digits = 3) > 0)[1]
     names(output) <- c(
       "Significance_threshold",
       "False_discoveries",
