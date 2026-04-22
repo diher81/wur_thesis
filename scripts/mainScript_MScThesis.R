@@ -724,7 +724,6 @@ elisa.FDR <- QTL.map.1.FDR(map1.output = aS.pQTL,
                            q.value = 0.025,
                            small = TRUE)
 thresholdElisa <- elisa.FDR[[1]] / 10
-thresholdElisa
 save(elisa.FDR, file = file.path(paths$output$elisa, "obj_RIL.elis.FDR.Rdata"))
 
 peak.aS.pQTL <- QTL.map1.dataframe(map1.output = aS.pQTL) %>%
@@ -782,7 +781,6 @@ qpcr.FDR <- QTL.map.1.FDR(map1.output = qpcr.pQTL,
                           q.value = 0.025,
                           small = TRUE)
 thresholdQpcr <- qpcr.FDR[[1]] / 10 
-thresholdQpcr
 save(qpcr.FDR, file = file.path(paths$output$qpcr, "obj_RIL.qpcr.FDR.Rdata"))
 
 peak.qpcr.pQTL <- QTL.map1.dataframe(map1.output = qpcr.pQTL) %>%
@@ -845,7 +843,6 @@ lifespan.FDR <- QTL.map.1.FDR(map1.output = lifespan.QTL,
                               q.value = 0.025,
                               small = TRUE)
 thresholdLifespan <- lifespan.FDR[[1]] / 10
-thresholdLifespan
 
 # QTL mapping
 traits <- unique(life_data_stats$trait)
