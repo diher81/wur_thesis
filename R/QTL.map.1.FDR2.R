@@ -16,11 +16,7 @@
 
 
 
-QTL.map.1.FDR2 <- function(map1.output,
-                           filenames.perm,
-                           FDR_dir,
-                           q.value,
-                           small) {
+QTL.map.1.FDR2 <- function(map1.output, filenames.perm, FDR_dir, q.value, small) {
   if (missing(map1.output)) {
     stop("Missing map1.output ([[LOD]],[[Effect]],[[Trait]],[[Map]],[[Marker]])")
   }
@@ -65,7 +61,7 @@ QTL.map.1.FDR2 <- function(map1.output,
       tmp <- as.vector(tmp)
     }
     
-    # CRITICAL FIX: Keep all permutation max LODs, don't take max()
+    # FIX: Keep all permutation max LODs, don't take max()
     output[[2]] <- tmp  # Now a vector of length = number of permutations
     
     # Warning if too few permutations for stable FDR
