@@ -976,6 +976,7 @@ for (tr in traits) {
     ggtitle("Plasticity") 
   
   globalTitle <- grid::textGrob(
+    label = "",
     gp = grid::gpar(fontsize = 22, fontface = "bold"),
     hjust = 0.5
   )
