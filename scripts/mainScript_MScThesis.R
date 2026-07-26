@@ -572,7 +572,7 @@ figure_7_eQTL_counts
 
 # Filter out genes between 1M bp and 2.5M bp.
 aS.eQTL.table <- aS.eQTL.table %>%
-  dplyr::filter(qtl_chromosome == "III",
+  dplyr::filter(gene_chromosome == "III",
                 dplyr::between(qtl_bp, 1000000, 2500000))
 
 # Get a list of selected gene names and 
