@@ -80,7 +80,7 @@ library(jsonlite)
 library(limma)
 library(statmod)
 library(here)
-
+library(openxlsx)
 
 # ------------------------------------------------------------------------------
 # Set working directories
@@ -588,24 +588,22 @@ res <- POST(
   body = list(
     q = genes,                 
     scopes = "symbol",
-    fields = "symbol,name,summary",
+    fields = "query,name,WormBase",
     species = "6239"
   ),
   encode = "json"
 )
 
 geneInfo <- fromJSON(content(res, "text", encoding = "UTF-8"))
-geneInfo <- geneInfo[, c("query", "name")]
+geneInfo <- geneInfo[, c("query", "name", "WormBase")]
 geneInfo
 
 # Write these genes to a .pdf file
 df <- geneInfo
-colnames(df) <- c("Gene", "Description")
-df <- geneInfo
-colnames(df) <- c("Gene", "Description")
+colnames(df) <- c("Gene", "Description", "WormBase")
 df$Description <- str_wrap(df$Description, width = 50)
 pdf(file.path(paths$output$genes, "geneInfo.pdf"), width = 8.5, height = 11)
-rows_per_page <- 35
+rows_per_page <- 37
 n <- nrow(df)
 tt <- ttheme_default(base_size = 8)
 for (i in seq(1, n, by = rows_per_page)) {
@@ -616,6 +614,52 @@ for (i in seq(1, n, by = rows_per_page)) {
   if (i + rows_per_page <= n) grid.newpage()
 }
 dev.off()
+
+# Write these genes to a .xlsx file
+df <- geneInfo
+colnames(df) <- c("Gene", "Description", "WormBase")
+
+# Create workbook
+wb <- createWorkbook()
+addWorksheet(wb, "GeneInfo")
+writeData(wb, "GeneInfo", df)
+
+# Make header bold
+headerStyle <- createStyle(textDecoration = "bold")
+addStyle(
+  wb,
+  sheet = "GeneInfo",
+  style = headerStyle,
+  rows = 1,
+  cols = 1:ncol(df),
+  gridExpand = TRUE
+)
+
+# Wrap text in the Description column
+wrapStyle <- createStyle(wrapText = TRUE)
+addStyle(
+  wb,
+  sheet = "GeneInfo",
+  style = wrapStyle,
+  rows = 2:(nrow(df) + 1),
+  cols = 2,
+  gridExpand = TRUE
+)
+
+# Adjust column widths
+setColWidths(wb, "GeneInfo", cols = 1, widths = "auto")
+setColWidths(wb, "GeneInfo", cols = 2, widths = 50)
+setColWidths(wb, "GeneInfo", cols = 3, widths = "auto")
+
+# Adjust row heights to fit wrapped text
+setRowHeights(wb, "GeneInfo", rows = 2:(nrow(df) + 1), heights = "auto")
+
+# Save workbook
+saveWorkbook(
+  wb,
+  file.path(paths$output$genes, "geneInfo.xlsx"),
+  overwrite = TRUE
+)
 
 # ------------------------------------------------------------------------------
 # Draw eQTL profiles and boxplots for genes of interest
