@@ -553,13 +553,14 @@ figure_6_locations
 plot.data <- filter(aS.eQTL.table, qtl_type == "trans") %>%
   prep.ggplot.eQTL.table() 
 
+# Plot trans-eQTLs
 figure_7_eQTL_counts <- ggplot(plot.data, aes(x = qtl_bp,fill = qtl_type)) +
   geom_histogram(binwidth = 500000) + geom_hline(yintercept = 36,lty = 2,lwd = 1.2) +
   facet_grid(c("")~qtl_chromosome, space  =  "free",scales = "free") + presentation + 
   fillScale + theme(legend.position  =  "none",
                     panel.spacing = unit(0.1,"lines")) +
   labs(x = "eQTL peak position (Mb)", y = "eQTL counts") +
-  ggtitle("Figure 7: eQTL") +
+  ggtitle("Figure 7: trans-eQTL") +
   scale_x_continuous(breaks = c(5,10,15,20)*10^6,
                      labels = c(5,10,15,20))
 
