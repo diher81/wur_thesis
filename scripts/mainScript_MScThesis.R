@@ -680,46 +680,79 @@ for (i in seq_along(spotIds)) {
   data.plot <- prep.ggplot.QTL.profile(peak.aS.eQTL, aS.eQTL, spotIds[i])
   data.plot[[2]] <- mutate(data.plot[[2]], geno_strain = ifelse(genotype == -1, "CB4856", "N2"))
 
-  plotEqtlProfile <- ggplot(data.plot$QTL_profile, aes(x = qtl_bp,y = qtl_significance,alpha = 0.2)) +
-    geom_line(size = 1.5,colour = brewer.pal(9,"Set1")[4]) + 
-    facet_grid(~qtl_chromosome,scales = "free",
-               space = "free_x") + 
-    presentation + 
-    theme(legend.position = "none",
-          plot.margin = margin(10, 30, 10, 30)) +
-    geom_abline(intercept = 4.3, slope = 0, linetype = 2, size = 1) + 
-    labs(x = "QTL position (Mb)",
-         y = expression(bold("significance"~(-log[10](p)))),
-         parse = TRUE) +
-    scale_x_continuous(breaks = c(0,10,20)*10^6,labels = c(0,10,20)) + ylim(0,5.5)
+  # Plot eQTL profile
+  plotEqtlProfile <- ggplot(
+    data.plot$QTL_profile,
+    aes(x = qtl_bp, y = qtl_significance, alpha = 0.2)) +
+    geom_line(
+      size = 1.5,
+      colour = brewer.pal(9, "Set1")[4]) +
+    facet_grid(
+      ~qtl_chromosome,
+      scales = "free",
+      space = "free_x") +
+    presentation +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(10, 30, 10, 30),
+      strip.text = element_text(size = 20, face = "bold")) +
+    geom_abline(
+      intercept = 4.3,
+      slope = 0,
+      linetype = 2,
+      size = 1) +
+    labs(
+      x = "QTL position (Mb)",
+      y = expression(bold("significance"~(-log[10](p)))),
+      parse = TRUE) +
+    scale_x_continuous(
+      breaks = c(0, 10, 20) * 10^6,
+      labels = c(0, 10, 20)) +
+    ylim(0, 5.5)
   
-  plotBoxplot <- ggplot(data.plot[[2]], aes(x = geno_strain, y = trait_value)) +
-    geom_jitter(height = 0,
-                width = 0.25,
-                aes(colour = geno_strain),
-                alpha = 0.2) + 
-    geom_boxplot(outlier.shape = NA, alpha = 0.2, aes(fill = geno_strain)) +
-    labs(x = "Genotype at marker", 
-         y = paste(geneNames[i], " expression"),
-         parse = TRUE) + 
-    facet_grid(~Chromosome+Position) +
-    presentation + 
-    colScale + 
-    fillScale + 
-    theme(legend.position = "none",
-          plot.margin = margin(10, 30, 10, 30)) +
-    annotate("text",
-             x=1.5,
-             y=max(data.plot[[2]]$trait_value,na.rm=T),
-             label = paste0("italic(R)^{2}==",
-                         round(data.plot[[2]]$R_squared[1], digits=2)),
-             parse = TRUE)
+  # Plot boxplot
+  plotBoxplot <- ggplot(
+    data.plot[[2]],
+    aes(x = geno_strain, y = trait_value)) +
+    geom_jitter(
+      height = 0,
+      width = 0.25,
+      aes(colour = geno_strain),
+      alpha = 0.2) +
+    geom_boxplot(
+      outlier.shape = NA,
+      alpha = 0.2,
+      aes(fill = geno_strain)) +
+    labs(
+      x = "Genotype at marker",
+      y = paste(geneNames[i], " expression"),
+      parse = TRUE) +
+    facet_grid(~Chromosome + Position) +
+    presentation +
+    colScale +
+    fillScale +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(10, 30, 10, 30),
+      strip.text.x = element_text(
+        size = 20,
+        face = "bold",
+        colour = "black")) +
+    annotate(
+      "text",
+      x = 1.5,
+      y = max(data.plot[[2]]$trait_value, na.rm = TRUE),
+      label = paste0(
+        "italic(R)^{2}==",
+        round(data.plot[[2]]$R_squared[1], digits = 2)),
+      parse = TRUE,
+      size = 10,
+      fontface = "bold")
   
   globalTitle <- grid::textGrob(
     label = paste("Gene", geneNames[i], ": eQTL profile and genotype split-out."),
     gp = grid::gpar(fontsize = 22, fontface = "bold"),
-    hjust = 0.5
-  )
+    hjust = 0.5)
 
   # Draw to pdf
   grid.arrange(globalTitle,
@@ -728,7 +761,7 @@ for (i in seq_along(spotIds)) {
                plotBoxplot,
                grid::nullGrob(),
                ncol = 1,
-               heights = c(1, 5, 1.5, 5, 1))
+               heights = c(1, 5, 0.1, 5, 1))
 }
 
 # Close pdf
