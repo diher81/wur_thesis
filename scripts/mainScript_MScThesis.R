@@ -81,6 +81,8 @@ library(limma)
 library(statmod)
 library(here)
 library(openxlsx)
+library(officer)
+library(rvg)
 
 # ------------------------------------------------------------------------------
 # Set working directories
@@ -663,7 +665,7 @@ saveWorkbook(
 )
 
 # ------------------------------------------------------------------------------
-# Draw eQTL profiles and boxplots for genes of interest
+# Draw eQTL profiles and boxplots for genes of interest - PDF
 # ------------------------------------------------------------------------------
 
 # Gene names and spotIds of the selected genes
@@ -766,6 +768,275 @@ for (i in seq_along(spotIds)) {
 
 # Close pdf
 dev.off()
+
+
+# ------------------------------------------------------------------------------
+# Draw eQTL profiles and boxplots for genes of interest
+# Output: DOCX, 4 genes per page (2 x 2)
+# ------------------------------------------------------------------------------
+
+# Gene names and spotIds of the selected genes
+spotIds <- aS.eQTL.table[[1]]
+geneNames <- aS.eQTL.table[[16]]
+
+# Create output directory for temporary images
+tmp.dir <- file.path(root, paths$output$genes, "tmp_gene_plots")
+dir.create(tmp.dir, showWarnings = FALSE, recursive = TRUE)
+
+# Create Word document
+doc <- read_docx()
+
+# Store individual gene plots
+genePlots <- list()
+
+# Create an eQTL profile + boxplot for every selected gene
+for (i in seq_along(spotIds)) {
+  
+  message(paste(i, "of", length(spotIds)))
+  
+  data.plot <- prep.ggplot.QTL.profile(
+    peak.aS.eQTL,
+    aS.eQTL,
+    spotIds[i]
+  )
+  
+  data.plot[[2]] <- mutate(
+    data.plot[[2]],
+    geno_strain = ifelse(
+      genotype == -1,
+      "CB4856",
+      "N2"
+    )
+  )
+  
+  # --------------------------------------------------------------------------
+  # eQTL profile
+  # --------------------------------------------------------------------------
+  
+  plotEqtlProfile <- ggplot(
+    data.plot$QTL_profile,
+    aes(
+      x = qtl_bp,
+      y = qtl_significance,
+      alpha = 0.2
+    )
+  ) +
+    geom_line(
+      size = 1.5,
+      colour = brewer.pal(9, "Set1")[4]
+    ) +
+    facet_grid(
+      ~qtl_chromosome,
+      scales = "free",
+      space = "free_x"
+    ) +
+    presentation +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(10, 30, 10, 30),
+      strip.text = element_text(
+        size = 20,
+        face = "bold"
+      )
+    ) +
+    geom_abline(
+      intercept = 4.3,
+      slope = 0,
+      linetype = 2,
+      size = 1
+    ) +
+    labs(
+      x = "QTL position (Mb)",
+      y = expression(
+        bold("significance"~(-log[10](p)))
+      ),
+      parse = TRUE
+    ) +
+    scale_x_continuous(
+      breaks = c(0, 10, 20) * 10^6,
+      labels = c(0, 10, 20)
+    ) +
+    ylim(0, 5.5)
+  
+  # --------------------------------------------------------------------------
+  # Boxplot
+  # --------------------------------------------------------------------------
+  
+  plotBoxplot <- ggplot(
+    data.plot[[2]],
+    aes(
+      x = geno_strain,
+      y = trait_value
+    )
+  ) +
+    geom_jitter(
+      height = 0,
+      width = 0.25,
+      aes(colour = geno_strain),
+      alpha = 0.2
+    ) +
+    geom_boxplot(
+      outlier.shape = NA,
+      alpha = 0.2,
+      aes(fill = geno_strain)
+    ) +
+    labs(
+      x = "Genotype at marker",
+      y = paste(geneNames[i], " expression"),
+      parse = TRUE
+    ) +
+    facet_grid(~Chromosome + Position) +
+    presentation +
+    colScale +
+    fillScale +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(10, 30, 10, 30),
+      strip.text.x = element_text(
+        size = 12,
+        face = "bold",
+        colour = "black"
+      )
+    ) +
+    annotate(
+      "text",
+      x = 1.5,
+      y = max(
+        data.plot[[2]]$trait_value,
+        na.rm = TRUE
+      ),
+      label = paste0(
+        "italic(R)^{2}==",
+        round(
+          data.plot[[2]]$R_squared[1],
+          digits = 2
+        )
+      ),
+      parse = TRUE,
+      size = 6,
+      fontface = "bold"
+    )
+  
+  # --------------------------------------------------------------------------
+  # Combine the two plots for this gene
+  # --------------------------------------------------------------------------
+  
+  globalTitle <- grid::textGrob(
+    label = paste(
+      "Gene",
+      geneNames[i],
+      ": eQTL profile and genotype split-out."
+    ),
+    gp = grid::gpar(
+      fontsize = 16,
+      fontface = "bold"
+    ),
+    hjust = 0.5
+  )
+  
+  genePlots[[i]] <- arrangeGrob(
+    globalTitle,
+    plotEqtlProfile,
+    plotBoxplot,
+    ncol = 1,
+    heights = c(0.5, 2, 2)
+  )
+}
+
+# ------------------------------------------------------------------------------
+# Create 2 x 2 pages
+# ------------------------------------------------------------------------------
+
+for (pageStart in seq(1, length(genePlots), by = 4)) {
+  
+  pageEnd <- min(
+    pageStart + 3,
+    length(genePlots)
+  )
+  
+  pagePlots <- genePlots[pageStart:pageEnd]
+  
+  # Fill remaining cells with blank grobs
+  while (length(pagePlots) < 4) {
+    pagePlots[[length(pagePlots) + 1]] <- nullGrob()
+  }
+  
+  # Arrange four genes in 2 x 2 layout
+  pageGrob <- arrangeGrob(
+    grobs = pagePlots,
+    ncol = 2,
+    nrow = 2,
+    padding = unit(0, "pt")
+  )
+  
+  # Add horizontal and vertical separator lines
+  pageGrob <- grobTree(
+    pageGrob,
+    linesGrob(
+      x = unit(c(0.5, 0.5), "npc"),
+      y = unit(c(0, 1), "npc"),
+      gp = gpar(col = "black", lwd = 2)
+    ),
+    linesGrob(
+      x = unit(c(0, 1), "npc"),
+      y = unit(c(0.5, 0.5), "npc"),
+      gp = gpar(col = "black", lwd = 2)
+    )
+  )
+  
+  # Temporary PNG
+  pngFile <- file.path(
+    tmp.dir,
+    paste0(
+      "gene_page_",
+      ceiling(pageStart / 4),
+      ".png"
+    )
+  )
+  
+  # Render page
+  png(
+    pngFile,
+    width = 2400,
+    height = 3200,
+    res = 200
+  )
+  
+  grid.newpage()
+  grid.draw(pageGrob)
+  
+  dev.off()
+  
+  # Add page to Word
+  if (pageStart > 1) {
+    doc <- doc %>%
+      body_add_break()
+  }
+  
+  doc <- doc %>%
+    body_add_img(
+      src = pngFile,
+      width = 7.0,
+      height = 9.9
+    )
+}
+
+# ------------------------------------------------------------------------------
+# Save DOCX
+# ------------------------------------------------------------------------------
+
+docxFile <- file.path(
+  root,
+  paths$output$genes,
+  "boxplotsForGenes.docx"
+)
+
+print(
+  doc,
+  target = docxFile
+)
+
+message("Created: ", docxFile)
 
 
 # ------------------------------------------------------------------------------
